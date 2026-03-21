@@ -14,18 +14,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
 
-      - name: Pre-Download Hockey Game (No 503)
+      - name: Pre-Download Hockey Game (GUARANTEED)
         run: |
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
                --tries=5 --waitretry=10 \
-               -O hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4" || \
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4"
+               -O hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4" || \
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
           
           if [ ! -f hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 5000000 ]; then
             echo "Download failed"
             exit 1
           fi
-          echo "Hockey game ready: $(du -h hockey.mp4)"
+          echo "✅ Hockey game ready: $(du -h hockey.mp4)"
 
       - name: Check Video
         run: ffprobe -v quiet -show_entries format=duration -of csv=p=0 hockey.mp4 || exit 1
