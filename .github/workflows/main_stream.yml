@@ -1,4 +1,4 @@
-name: Canada Classics 24-7 Multi-Movie Engine
+name: Seamless 3-Western Continuous Loop
 
 on:
   workflow_dispatch:
@@ -6,43 +6,32 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  multi_stream:
+  seamless_stream:
     runs-on: ubuntu-latest
     steps:
       - name: Install Tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download & Stream Rotation
+      - name: Create Seamless 3-Movie Stream
         run: |
-          # 3 محتويات كندية ترندنج
-          MOVIES=(
-            "https://archive.org/download/BlazingJustice/BlazingJustice.mp4"
-            "https://dn711303.ca.archive.org/0/items/ClearingtheRange/ClearingtheRange.mp4" 
-            "https://dn711008.ca.archive.org/0/items/TheMontanaKid/TheMontanaKid.mp4"
-          )
+          # تحميل الـ 3 أفلام
+          wget -O blazing.mp4 "https://archive.org/download/BlazingJustice/BlazingJustice.mp4"
+          wget -O clearing.mp4 "https://dn711303.ca.archive.org/0/items/ClearingtheRange/ClearingtheRange.mp4"
+          wget -O montana.mp4 "https://dn711008.ca.archive.org/0/items/TheMontanaKid/TheMontanaKid.mp4"
           
-          while true; do
-            for i in {0..2}; do
-              MOVIE="${MOVIES[$i]}"
-              FNAME=$(basename "$MOVIE")
-              echo "🎬 [#$((i+1))] Downloading $FNAME..."
-              
-              wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
-                   --tries=3 -O "$FNAME" "$MOVIE"
-              
-              if [ ! -f "$FNAME" ] || [ $(stat -c%s "$FNAME") -lt 5000000 ]; then
-                echo "❌ Download failed, skipping..."
-                continue
-              fi
-              
-              echo "✅ Streaming $FNAME (45min)..."
-              ffmpeg -stream_loop -1 -i "$FNAME" \
-              -filter_complex "[0:v]scale=1280:720,fps=25[vid];[vid]drawbox=y=0:color=black@0.9:width=iw:height=90,drawtext=text='🔥 CANADA WESTERNS 24/7 [#$((i+1))/3]':x=50:y=20:fontsize=35:fontcolor=#FFD700:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='%{localtime\:%H\:%M\:%S} LIVE!':x=w-tw-60:y=25:fontsize=32:fontcolor=white,drawbox=y=h-90:color=#8B0000@0.8:width=iw:height=90,drawtext=text='Blazing Justice | Clearing Range | Montana Kid':x=50:y=h-65:fontsize=28:fontcolor=white,drawtext=text='SUBSCRIBE FOR MORE CLASSICS!':x=(w-text_w)/2:y=h-30:fontsize=28:fontcolor=#FFD700[v]" \
-              -map "[v]" -map 0:a -c:v libx264 -preset ultrafast -b:v 2800k -pix_fmt yuv420p -c:a aac -t 2700 -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}" || true
-              
-              rm -f "$FNAME"
-              echo "✅ $FNAME done, next movie..."
-            done
-          done
+          # Concat list (متصل بدون gaps)
+          cat > list.txt << EOF
+          file 'blazing.mp4'
+          file 'clearing.mp4'  
+          file 'montana.mp4'
+          EOF
+          
+          # دمج الـ 3 في ملف واحد (~3 ساعات)
+          ffmpeg -f concat -safe 0 -i list.txt -c copy seamless_3westerns.mp4
+          echo "✅ 3 Westerns concatenated: $(du -h seamless_3westerns.mp4)"
+          
+          # Stream لا نهائي مستمر
+          ffmpeg -stream_loop -1 -re -i seamless_3westerns.mp4 \
+          -vf "scale=1280:720,fps=25,drawbox=y=0:color=black@0.85:width=iw:height=80,drawtext=text='🔥 3 CANADIAN WESTERNS 24/7 LOOP':x=50:y=15:fontsize=36:fontcolor=#FFD700:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='Blazing+Clearing+Montana Kid | %{localtime\:%H\:%M} LIVE!':x=w-tw-50:y=20:fontsize=28:fontcolor=white,drawbox=y=h-80:color=#8B0000@0.8:width=iw:height=80,drawtext=text='SUBSCRIBE CANADA CLASSICS!':x=(w-text_w)/2:y=h-35:fontsize=32:fontcolor=#FFD700" \
+          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3500k -bufsize 6000k -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
+          -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
