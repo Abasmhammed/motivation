@@ -1,4 +1,4 @@
-name: Global Cinema 24-7 Local Engine
+name: Canada Classics 24-7 Multi-Movie Engine
 
 on:
   workflow_dispatch:
@@ -6,33 +6,43 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  movie_streaming:
+  multi_stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Pro Media Tools
+      - name: Install Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
 
-      - name: Pre-Download Clearing the Range (WORKING!)
+      - name: Download & Stream Rotation
         run: |
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=5 --waitretry=10 \
-               -O clearing.mp4 "https://dn711303.ca.archive.org/0/items/ClearingtheRange/ClearingtheRange.mp4" || \
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o clearing.mp4 "https://dn711303.ca.archive.org/0/items/ClearingtheRange/ClearingtheRange.mp4"
+          # 3 محتويات كندية ترندنج
+          MOVIES=(
+            "https://archive.org/download/BlazingJustice/BlazingJustice.mp4"
+            "https://dn711303.ca.archive.org/0/items/ClearingtheRange/ClearingtheRange.mp4" 
+            "https://dn711008.ca.archive.org/0/items/TheMontanaKid/TheMontanaKid.mp4"
+          )
           
-          if [ ! -f clearing.mp4 ] || [ $(stat -c%s clearing.mp4) -lt 5000000 ]; then
-            echo "Download failed"
-            exit 1
-          fi
-          echo "✅ Clearing the Range ready: $(du -h clearing.mp4)"
-
-      - name: Check Video
-        run: ffprobe -v quiet -show_entries format=duration -of csv=p=0 clearing.mp4 || exit 1
-
-      - name: Launch 24-7 Western Stream
-        run: |
-          RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
-          ffmpeg -re -stream_loop -1 -i clearing.mp4 \
-          -filter_complex "[0:v]scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=70,drawtext=text='CLASSIC WESTERN CINEMA':x=50:y=20:fontsize=35:fontcolor=red,drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=white,drawbox=y=h-70:color=blue@0.7:width=iw:height=70,drawtext=text='SUBSCRIBE FOR MORE WESTERNS 🎉':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white[v]" \
-          -map "[v]" -map 0:a -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -c:a aac -f flv "$RTMP_TARGET"
+          while true; do
+            for i in {0..2}; do
+              MOVIE="${MOVIES[$i]}"
+              FNAME=$(basename "$MOVIE")
+              echo "🎬 [#$((i+1))] Downloading $FNAME..."
+              
+              wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64)" \
+                   --tries=3 -O "$FNAME" "$MOVIE"
+              
+              if [ ! -f "$FNAME" ] || [ $(stat -c%s "$FNAME") -lt 5000000 ]; then
+                echo "❌ Download failed, skipping..."
+                continue
+              fi
+              
+              echo "✅ Streaming $FNAME (45min)..."
+              ffmpeg -stream_loop -1 -i "$FNAME" \
+              -filter_complex "[0:v]scale=1280:720,fps=25[vid];[vid]drawbox=y=0:color=black@0.9:width=iw:height=90,drawtext=text='🔥 CANADA WESTERNS 24/7 [#$((i+1))/3]':x=50:y=20:fontsize=35:fontcolor=#FFD700:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='%{localtime\:%H\:%M\:%S} LIVE!':x=w-tw-60:y=25:fontsize=32:fontcolor=white,drawbox=y=h-90:color=#8B0000@0.8:width=iw:height=90,drawtext=text='Blazing Justice | Clearing Range | Montana Kid':x=50:y=h-65:fontsize=28:fontcolor=white,drawtext=text='SUBSCRIBE FOR MORE CLASSICS!':x=(w-text_w)/2:y=h-30:fontsize=28:fontcolor=#FFD700[v]" \
+              -map "[v]" -map 0:a -c:v libx264 -preset ultrafast -b:v 2800k -pix_fmt yuv420p -c:a aac -t 2700 -f flv "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}" || true
+              
+              rm -f "$FNAME"
+              echo "✅ $FNAME done, next movie..."
+            done
+          done
