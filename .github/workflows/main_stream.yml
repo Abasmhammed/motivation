@@ -1,0 +1,31 @@
+name: Global Motivation & Canada Live Stream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  live_streaming:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+
+      - name: Start 24/7 Professional Broadcast
+        run: |
+          SOURCE_URL="https://www.youtube.com/watch?v=21X5lGlDOfg"
+          DIRECT_LINK=$(yt-dlp -f "best" -g "$SOURCE_URL")
+          RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
+
+          ffmpeg -re -stream_loop -1 -i "$DIRECT_LINK" \
+          -filter_complex \
+          "[0:v]scale=1280:720,hue=s=1.2:b=0.1,vignette=PI/4, \
+           drawtext=text='WELCOME TO CANADA':x=50:y=50:fontsize=45:fontcolor=white:borderw=2:bordercolor=red, \
+           drawtext=text='GLOBAL TRENDING LIVE':x=w-tw-50:y=50:fontsize=45:fontcolor=yellow:borderw=2:bordercolor=black, \
+           drawtext=text='LIKE & SUBSCRIBE':x=w-tw-50:y=h-th-50:fontsize=40:fontcolor=white:box=1:boxcolor=red@0.8[v]" \
+          -map "[v]" -map 0:a -c:v libx264 -preset veryfast -b:v 3000k -f flv "$RTMP_TARGET"
