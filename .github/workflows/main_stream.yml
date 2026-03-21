@@ -1,4 +1,4 @@
-name: Global Cinema 24-7 Final Direct Mode
+name: Global Cinema 24-7 Local Engine
 
 on:
   workflow_dispatch:
@@ -9,29 +9,45 @@ jobs:
   movie_streaming:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Essential Tools
+      - name: Install Pro Media Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          sudo apt-get install -y ffmpeg fonts-dejavu-core wget
 
-      - name: Start 24-7 Direct Broadcast
+      - name: Pre-Download Movie (Fixed 503)
         run: |
-          # 1. DIRECT SOURCE (The Stranger 1946 - Direct High-Speed Link)
-          # No YouTube scraping involved. This link is 100% open for servers.
-          DIRECT_LINK="https://archive.org/download/TheStranger1946_201309/The_Stranger.mp4"
+          # Download with Chrome-like user-agent to bypass 503
+          # Retry 3 times with delays
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+               --tries=3 --waitretry=5 --timeout=30 \
+               -O movie.mp4 "https://archive.org/download/TheStranger1946_201309/The_Stranger.mp4" || \
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+               -o movie.mp4 "https://archive.org/download/TheStranger1946_201309/The_Stranger.mp4"
           
-          # 2. Your YouTube Destination
-          RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
+          # Verify download success (must be >10MB)
+          if [ ! -f movie.mp4 ] || [ $(stat -c%s movie.mp4) -lt 10000000 ]; then
+            echo "Download failed: $(ls -la movie.mp4 || echo 'No file')"
+            exit 1
+          fi
+          echo "Movie downloaded successfully: $(du -h movie.mp4)"
 
-          # 3. Professional Engine
-          ffmpeg -re -stream_loop -1 -i "$DIRECT_LINK" \
+      - name: Check Movie Before Stream
+        run: |
+          ffprobe -v quiet -show_entries format=duration -of csv=p=0 movie.mp4 || exit 1
+          echo "Movie ready for streaming"
+
+      - name: Launch 24-7 Local Broadcast
+        run: |
+          RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
+          
+          ffmpeg -re -stream_loop -1 -i movie.mp4 \
           -filter_complex \
           "[0:v]crop=iw-120:ih-120:60:60,scale=1280:720, \
            drawbox=y=0:color=black@0.8:width=iw:height=70:t=fill, \
            drawtext=text='PREMIUM CLASSIC CINEMA':x=50:y=20:fontsize=35:fontcolor=gold:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
            drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
            drawbox=y=h-70:color=red@0.7:width=iw:height=70:t=fill, \
-           drawtext=text='SUBSCRIBE FOR 24/7 CLASSICS 🎬':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
+           drawtext=text='SUBSCRIBE FOR 24/7 MOVIES 🎬':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
           -map "[v]" -map 0:a \
           -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
           -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
