@@ -16,10 +16,11 @@ jobs:
 
       - name: Pre-Download Hockey Game (No 503)
         run: |
+          # Legendary Canadian Trend: 1972 Summit Series Game 8
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
                --tries=5 --waitretry=10 \
-               -O hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4" || \
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4"
+               -O hockey.mp4 "https://archive.org/download/hockey-history-collection/summit_series_1972_game_8.mp4" || \
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/hockey-history-collection/summit_series_1972_game_8.mp4"
           
           if [ ! -f hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 5000000 ]; then
             echo "Download failed"
