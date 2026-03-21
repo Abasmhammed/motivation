@@ -1,4 +1,4 @@
-name: Global Cinema 24-7 Ultimate Stable
+name: Global Cinema 24-7 Final Direct Mode
 
 on:
   workflow_dispatch:
@@ -9,21 +9,21 @@ jobs:
   movie_streaming:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Professional Tools
+      - name: Install Essential Tools
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg fonts-dejavu-core
-          
-      - name: Launch Direct Link Stream
+
+      - name: Start 24-7 Direct Broadcast
         run: |
-          # 1. Direct High-Quality Movie Link (From Archive.org - NO BLOCKS)
-          # This is a classic action movie Canadians and Americans love.
-          DIRECT_LINK="https://archive.org/download/TheFastAndTheFurious1954/TheFastAndTheFurious1954.mp4"
+          # 1. DIRECT SOURCE (The Stranger 1946 - Direct High-Speed Link)
+          # No YouTube scraping involved. This link is 100% open for servers.
+          DIRECT_LINK="https://archive.org/download/TheStranger1946_201309/The_Stranger.mp4"
           
-          # 2. YouTube Destination
+          # 2. Your YouTube Destination
           RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
 
-          # 3. Cinematic Engine (Fixed Logo-Eraser & Live Clock)
+          # 3. Professional Engine
           ffmpeg -re -stream_loop -1 -i "$DIRECT_LINK" \
           -filter_complex \
           "[0:v]crop=iw-120:ih-120:60:60,scale=1280:720, \
@@ -31,7 +31,7 @@ jobs:
            drawtext=text='PREMIUM CLASSIC CINEMA':x=50:y=20:fontsize=35:fontcolor=gold:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
            drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
            drawbox=y=h-70:color=red@0.7:width=iw:height=70:t=fill, \
-           drawtext=text='SUBSCRIBE FOR DAILY CLASSICS 🎬':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
+           drawtext=text='SUBSCRIBE FOR 24/7 CLASSICS 🎬':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
           -map "[v]" -map 0:a \
           -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
           -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
