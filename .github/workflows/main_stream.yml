@@ -12,43 +12,27 @@ jobs:
       - name: Install Pro Media Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core wget
+          sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
 
-      - name: Pre-Download Movie (Fixed 503)
+      - name: Pre-Download Hockey Game (No 503)
         run: |
-          # Download with Chrome-like user-agent to bypass 503
-          # Retry 3 times with delays
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-               --tries=3 --waitretry=5 --timeout=30 \
-               -O movie.mp4 "https://archive.org/download/TheStranger1946_201309/The_Stranger.mp4" || \
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-               -o movie.mp4 "https://archive.org/download/TheStranger1946_201309/The_Stranger.mp4"
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+               --tries=5 --waitretry=10 \
+               -O hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4" || \
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
           
-          # Verify download success (must be >10MB)
-          if [ ! -f movie.mp4 ] || [ $(stat -c%s movie.mp4) -lt 10000000 ]; then
-            echo "Download failed: $(ls -la movie.mp4 || echo 'No file')"
+          if [ ! -f hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 5000000 ]; then
+            echo "Download failed"
             exit 1
           fi
-          echo "Movie downloaded successfully: $(du -h movie.mp4)"
+          echo "Hockey game ready: $(du -h hockey.mp4)"
 
-      - name: Check Movie Before Stream
-        run: |
-          ffprobe -v quiet -show_entries format=duration -of csv=p=0 movie.mp4 || exit 1
-          echo "Movie ready for streaming"
+      - name: Check Video
+        run: ffprobe -v quiet -show_entries format=duration -of csv=p=0 hockey.mp4 || exit 1
 
-      - name: Launch 24-7 Local Broadcast
+      - name: Launch 24-7 Hockey Stream
         run: |
           RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
-          
-          ffmpeg -re -stream_loop -1 -i movie.mp4 \
-          -filter_complex \
-          "[0:v]crop=iw-120:ih-120:60:60,scale=1280:720, \
-           drawbox=y=0:color=black@0.8:width=iw:height=70:t=fill, \
-           drawtext=text='PREMIUM CLASSIC CINEMA':x=50:y=20:fontsize=35:fontcolor=gold:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
-           drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
-           drawbox=y=h-70:color=red@0.7:width=iw:height=70:t=fill, \
-           drawtext=text='SUBSCRIBE FOR 24/7 MOVIES 🎬':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
-          -map "[v]" -map 0:a \
-          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
-          -f flv "$RTMP_TARGET"
+          ffmpeg -re -stream_loop -1 -i hockey.mp4 \
+          -filter_complex "[0:v]scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=70,drawtext=text='CANADIAN HOCKEY CLASSICS':x=50:y=20:fontsize=35:fontcolor=red,drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=white,drawbox=y=h-70:color=blue@0.7:width=iw:height=70,drawtext=text='SUBSCRIBE FOR MORE HOCKEY 🎉':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white[v]" \
+          -map "[v]" -map 0:a -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -c:a aac -f flv "$RTMP_TARGET"
