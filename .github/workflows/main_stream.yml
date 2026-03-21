@@ -1,4 +1,4 @@
-name: Global Cinema 24-7 - Stanley Cup Classics
+name: Hockey 24-7 Stream - Fixed Download
 
 on:
   workflow_dispatch:
@@ -6,35 +6,34 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  movie_streaming:
+  stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Media Tools
+      - name: Setup Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core wget
+          sudo apt-get install -y ffmpeg fonts-dejavu-core python3-pip
+          pip3 install --break-system-packages yt-dlp
 
-      - name: Download Verified Hockey Game
+      - name: Download Hockey Classic
         run: |
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=10 --waitretry=15 --timeout=60 \
-               -O hockey.mp4 "https://archive.org/download/1962-stanley-cup-finals-g-6_202308/TOR%20vs%20DET.ia.mp4"
+          yt-dlp --user-agent "Mozilla/5.0" -f 'best[height<=720]' \
+                 "https://archive.org/details/1962-stanley-cup-finals-g-6_202308" \
+                 --output "hockey.%(ext)s" --no-playlist
           
-          if [ ! -s hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 100000000 ]; then 
-            echo "Download failed"
-            ls -la hockey.mp4 || true
-            exit 1
+          HOCKEY_FILE=$(ls -S hockey.* | head -1)
+          mv "$HOCKEY_FILE" hockey.mp4
+          
+          SIZE=$(stat -c%s hockey.mp4)
+          if [ ! -f hockey.mp4 ] || [ $SIZE -lt 100000000 ]; then 
+            echo "Failed: size $SIZE"; ls -la hockey.*; exit 1
           fi
-          echo "Success: $(du -h hockey.mp4)"
-
-      - name: Verify Video
-        run: |
-          ffprobe -v quiet -show_entries format=duration:size -of csv=p=0 hockey.mp4 || exit 1
-          echo "Video ready"
+          echo "Success: $(du -h hockey.mp4) - Duration: $(ffprobe -v quiet -show_entries format=duration -of csv=p=0 hockey.mp4)s"
 
       - name: Stream to YouTube
         run: |
           RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
           ffmpeg -re -stream_loop -1 -i hockey.mp4 \
-          -filter_complex "[0:v]scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=75,drawtext=text='STANLEY CUP 1962 CLASSICS':x=50:y=20:fontsize=35:fontcolor=red,drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow,drawbox=y=h-75:color=blue@0.7:width=iw:height=75,drawtext=text='SUBSCRIBE 24/7 HOCKEY 🏒':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white[v]" \
-          -map "[v]" -map 0:a -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -r 30 -g 60 -c:a aac -f flv "$RTMP_TARGET"
+          -vf "scale=1280:720,drawtext=text='24/7 CANADIAN HOCKEY CLASSICS':fontsize=35:fontcolor=red:y=20:x=50,drawtext=text='%{localtime\:%H\:%M}':fontsize=30:fontcolor=yellow:y=20:x=(w-text_w-50),drawtext=text='SUBSCRIBE 🏒':fontsize=30:fontcolor=white:y=h-th-20:x=(w-text_w)/2" \
+          -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -r 30 \
+          -c:a aac -b:a 128k -f flv "$RTMP_TARGET"
