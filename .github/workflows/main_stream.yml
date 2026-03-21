@@ -1,43 +1,43 @@
-name: Professional 24-7 Live Stream Engine
+name: Professional 24-7 Luxury Stream
 
 on:
-  workflow_dispatch: # This creates the manual "Run" button
+  workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *' # Auto-restarts every 6 hours
+    - cron: '0 */6 * * *'
 
 jobs:
   streaming_job:
     runs-on: ubuntu-latest
     steps:
-      - name: Install System Tools
+      - name: Install Premium Media Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg nodejs
           sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
 
-      - name: Start Global Broadcast
+      - name: Launch Atmospheric Live Stream
         run: |
-          # 1. High Traffic Source (NASA Earth View)
-          SOURCE_URL="https://www.youtube.com/watch?v=21X5lGlDOfg"
+          # 1. Relaxing Nature & Music (High Retention Content)
+          SOURCE_URL="https://www.youtube.com/watch?v=fVsONlc3Kbc"
           
-          # 2. Extract Stream Link
-          DIRECT_LINK=$(yt-dlp -f "best" -g "$SOURCE_URL")
+          # 2. Extract Link
+          DIRECT_LINK=$(yt-dlp --no-check-certificates -f "best" -g "$SOURCE_URL")
           
-          # 3. Target (YouTube RTMP)
+          # 3. Target YouTube
           RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
 
-          # 4. FFmpeg Professional Filter Engine
+          # 4. Professional Visual Engine (Filters, Time, and Graphics)
           ffmpeg -re -stream_loop -1 -i "$DIRECT_LINK" \
           -filter_complex \
           "[0:v]scale=1280:720, \
-           hue=s=1.2:b=0.1, \
-           vignette=PI/4, \
-           drawtext=text='WELCOME TO CANADA':x=50:y=50:fontsize=45:fontcolor=white:borderw=2:bordercolor=red, \
-           drawtext=text='GLOBAL TRENDING LIVE':x=w-tw-50:y=50:fontsize=45:fontcolor=yellow:borderw=2:bordercolor=black, \
-           drawtext=text='BEAUTIFUL MEMORIES':x=(w-tw)/2:y=h-th-100:fontsize=45:fontcolor=cyan:borderw=2:bordercolor=black, \
-           drawtext=text='LIKE & SUBSCRIBE':x=w-tw-50:y=h-th-50:fontsize=40:fontcolor=white:box=1:boxcolor=red@0.8[v]" \
+           unsharp=5:5:1.0:5:5:0.0, \
+           drawbox=y=0:color=black@0.4:width=iw:height=80:t=fill, \
+           drawtext=text='WELCOME TO CANADA':x=50:y=25:fontsize=40:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
+           drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=25:fontsize=35:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
+           drawbox=y=h-80:color=red@0.6:width=iw:height=80:t=fill, \
+           drawtext=text='STAY RELAXED • LIKE & SUBSCRIBE':x=(w-tw)/2:y=h-th-25:fontsize=35:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
           -map "[v]" -map 0:a \
-          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3000k -bufsize 6000k \
+          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
           -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
           -f flv "$RTMP_TARGET"
