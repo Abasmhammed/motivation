@@ -1,9 +1,9 @@
-name: Global Cinema 24-7 Professional Engine
+name: Global Cinema 24-7 Professional Engine - @Drab123-v7l
 
 on:
-  workflow_dispatch: # Manual Start Button
+  workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *' # Auto-restarts every 6 hours for 24/7 uptime
+    - cron: '0 */6 * * *'
 
 jobs:
   movie_streaming:
@@ -12,33 +12,16 @@ jobs:
       - name: System Environment Setup
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg nodejs
+          sudo apt-get install -y ffmpeg nodejs fonts-dejavu-core
           sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
           sudo chmod a+rx /usr/local/bin/yt-dlp
 
-      - name: Launch Professional Stream
+      - name: Launch Professional Stream for @Drab123-v7l (UCZWzJdKbfp4TMj7afv-o8jg)
         run: |
-          # 1. High-Quality Public Domain Source (Classic Thriller)
           SOURCE_URL="https://www.youtube.com/watch?v=Mh_vS-V7vO8"
-          
-          # 2. Extract Link with Security Bypass
-          DIRECT_LINK=$(yt-dlp --no-check-certificates --quiet -f "best" -g "$SOURCE_URL")
-          
-          # 3. Secure YouTube RTMP Destination
+          DIRECT_LINK=$(yt-dlp --no-check-certificates --quiet -f "best[height<=720]" -g "$SOURCE_URL")
           RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
 
-          # 4. Professional Cinematic Engine
-          # [CROP] Removes 50px from all sides to hide external logos
-          # [DRAWBOX] Adds professional bars for branding and clock
           ffmpeg -re -stream_loop -1 -i "$DIRECT_LINK" \
-          -filter_complex \
-          "[0:v]crop=iw-100:ih-100:50:50,scale=1280:720, \
-           drawbox=y=0:color=black@0.8:width=iw:height=70:t=fill, \
-           drawtext=text='PREMIUM CLASSIC CINEMA':x=50:y=20:fontsize=35:fontcolor=gold:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
-           drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
-           drawbox=y=h-70:color=red@0.7:width=iw:height=70:t=fill, \
-           drawtext=text='SUBSCRIBE FOR DAILY CLASSIC MOVIES 🎬':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
-          -map "[v]" -map 0:a \
-          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-          -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 \
-          -f flv "$RTMP_TARGET"
+          -vf "crop=iw-100:ih-100:50:50,scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=70:t=fill,drawtext=text='PREMIUM CLASSIC CINEMA - @Drab123-v7l':x=50:y=20:fontsize=35:fontcolor=gold:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='%{localtime\\:%H\\:%M\\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawbox=y=h-70:color=red@0.7:width=iw:height=70:t=fill,drawtext=text='SUBSCRIBE @Drab123-v7l FOR DAILY CLASSIC MOVIES 🎬 UCZWzJdKbfp4TMj7afv-o8jg':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" \
+          -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k -pix_fmt yuv420p -g 60 -c:a aac -b:a 128k -ar 44100 -f flv "$RTMP_TARGET"
