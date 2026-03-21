@@ -1,4 +1,4 @@
-name: Global Cinema 24-7 Local Engine
+name: Global Cinema 24-7 - Ultimate Hockey Marathon
 
 on:
   workflow_dispatch:
@@ -9,30 +9,29 @@ jobs:
   movie_streaming:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Pro Media Tools
+      - name: Install Media Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
+          sudo apt-get install -y ffmpeg fonts-dejavu-core wget
 
-      - name: Pre-Download Hockey Game (No 503)
+      - name: Download Hockey Video
         run: |
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=5 --waitretry=10 \
-               -O hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4" || \
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
-          
-          if [ ! -f hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 5000000 ]; then
-            echo "Download failed"
-            exit 1
+               --tries=10 --waitretry=15 --timeout=60 \
+               -O marathon.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
+          if [ ! -s marathon.mp4 ] || [ $(stat -c%s marathon.mp4) -lt 5000000 ]; then 
+            echo "Download failed"; exit 1; 
           fi
-          echo "Hockey game ready: $(du -h hockey.mp4)"
+          echo "Downloaded: $(du -h marathon.mp4)"
 
-      - name: Check Video
-        run: ffprobe -v quiet -show_entries format=duration -of csv=p=0 hockey.mp4 || exit 1
+      - name: Verify Video
+        run: |
+          ffprobe -v quiet -show_entries format=duration -of csv=p=0 marathon.mp4 || exit 1
+          echo "Video OK"
 
-      - name: Launch 24-7 Hockey Stream
+      - name: Stream to YouTube
         run: |
           RTMP_TARGET="rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
-          ffmpeg -re -stream_loop -1 -i hockey.mp4 \
-          -filter_complex "[0:v]scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=70,drawtext=text='CANADIAN HOCKEY CLASSICS':x=50:y=20:fontsize=35:fontcolor=red,drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=white,drawbox=y=h-70:color=blue@0.7:width=iw:height=70,drawtext=text='SUBSCRIBE FOR MORE HOCKEY 🎉':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white[v]" \
-          -map "[v]" -map 0:a -c:v libx264 -preset veryfast -b:v 2500k -pix_fmt yuv420p -c:a aac -f flv "$RTMP_TARGET"
+          ffmpeg -re -stream_loop -1 -i marathon.mp4 \
+          -filter_complex "[0:v]scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=75:t=fill,drawtext=text='ULTIMATE HOCKEY MARATHON':x=50:y=20:fontsize=35:fontcolor=red:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='%{localtime\:%H\:%M\:%S}':x=w-tw-50:y=20:fontsize=30:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawbox=y=h-75:color=blue@0.7:width=iw:height=75:t=fill,drawtext=text='SUBSCRIBE FOR CLASSIC SPORTS 24/7 🎉':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[v]" \
+          -map "[v]" -map 0:a -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k -pix_fmt yuv420p -r 30 -g 60 -keyint_min 60 -sc_threshold 0 -c:a aac -b:a 128k -ar 44100 -f flv "$RTMP_TARGET"
