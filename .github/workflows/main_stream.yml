@@ -1,4 +1,4 @@
-name: Ultimate Music Loop - 20+ Links + Hockey Fallback
+name: Working Hockey Loop Only
 
 on:
   workflow_dispatch:
@@ -6,66 +6,34 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  bulletproof_stream:
+  hockey_stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Tools
+      - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download Working Videos (20+ Attempts)
+      - name: Download PROVEN Hockey Links Only
         run: |
-          # Priority 1: Your 4 YouTube Music (try first)
-          wget -T 20 -O m1.mp4 "https://music.youtube.com/watch?v=IoO9pbEzJ7U" 2>/dev/null || echo "m1 skipped"
-          wget -T 20 -O m2.mp4 "https://music.youtube.com/watch?v=KBdyzeA2Fl0" 2>/dev/null || echo "m2 skipped"
-          wget -T 20 -O m3.mp4 "https://music.youtube.com/watch?v=YuhiLvoTBJY" 2>/dev/null || echo "m3 skipped"
-          wget -T 20 -O m4.mp4 "https://music.youtube.com/watch?v=BV3NNQytg4g" 2>/dev/null || echo "m4 skipped"
+          # Hockey 1 - YOUR ORIGINAL WORKING
+          wget -O h1.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
           
-          # Priority 2: Archive.org Music (proven working)
-          wget -T 20 -O calm1.mp4 "https://archive.org/download/CalmPills/CalmPills01.mp4" 2>/dev/null || echo "calm1 skipped"
-          wget -T 20 -O calm2.mp4 "https://files.freemusicarchive.org/storage-freemusicarchive-org/music/ccCommunity/Jake_Hunter/Calm_Music_1/Jake_Hunter_-_Tranquil_Strings_Documentary_Background.mp3" 2>/dev/null || echo "calm2 skipped"
+          # Hockey 2 - NYR vs TOR (proven)
+          wget -O h2.mp4 "https://archive.org/download/1962-stanley-cup-finals-g-6_202308/NYR%20vs%20TOR.ia.mp4"
           
-          # Priority 3: Hockey Fallbacks (YOUR PROVEN LINKS)
-          wget -T 30 -O hockey1.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4" 2>/dev/null || echo "hockey1 skipped"
-          wget -T 30 -O hockey2.mp4 "https://archive.org/download/1962-stanley-cup-finals-g-6_202308/NYR%20vs%20TOR.ia.mp4" 2>/dev/null || echo "hockey2 skipped"
-          wget -T 30 -O hockey3.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4" 2>/dev/null || echo "hockey3 skipped"
-          
-          # Priority 4: More Music
-          wget -T 20 -O relax1.mp4 "https://archive.org/download/best-relaxation-music-2019/relax1.mp4" 2>/dev/null || echo "relax1 skipped"
-          
-          echo "✅ Download complete - building playlist..."
+          # Hockey 3 - Stanley Cup (proven)
+          wget -O h3.mp4 "https://archive.org/download/1962-stanley-cup-finals-g-6_202308/1962%20Stanley%20Cup%20Finals%20G6.mp4"
 
-      - name: Auto Build Playlist (Only Working Files)
+      - name: Create List
         run: |
-          # List all working video files
-          find . -name "*.mp4" -o -name "*.mp3" | grep -E "(m[0-4]|calm|hockey|relax)" | sort | head -12 | while read file; do echo "file '$file'"; done > list.txt
-          
-          # Show what will play
-          echo "Playlist ($(wc -l < list.txt) files):"
-          cat list.txt
-          
-          # Exit if no files
-          [ ! -s list.txt ] && exit 1
+          cat > list.txt << EOF
+          file 'h1.mp4'
+          file 'h2.mp4'
+          file 'h3.mp4'
+          EOF
 
-      - name: Merge Playlist
-        run: |
-          ffmpeg -f concat -safe 0 -i list.txt -c copy seamless_loop.mp4 -y
+      - name: Merge
+        run: ffmpeg -f concat -safe 0 -i list.txt -c copy hockey_loop.mp4
 
-      - name: Bulletproof 24/7 Stream
+      - name: Stream
         env:
-          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
-        run: |
-          if [ -f seamless_loop.mp4 ]; then
-            ffmpeg -stream_loop -1 -re -i seamless_loop.mp4 \
-              -vf "scale=1280:720,fps=25,
-                   drawbox=y=0:color=black@0.85:width=iw:height=80,
-                   drawtext=text='ULTIMATE MUSIC 24/7':x=50:y=15:fontsize=36:fontcolor=#FFD700,
-                   drawtext=text='Auto Loop | %{localtime\:%H\:%M} LIVE':x=w-tw-50:y=20:fontsize=28:fontcolor=white,
-                   drawbox=y=h-80:color=#8B0000@0.8:width=iw:height=80,
-                   drawtext=text='SUBSCRIBE NOW':x=(w-text_w)/2:y=h-35:fontsize=32:fontcolor=#FFD700" \
-              -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3500k -bufsize 6000k -g 60 \
-              -c:a aac -b:a 128k \
-              -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
-          else
-            echo "No working files found"
-            exit 0
-          fi
+          STREAM_KEY: ${{
