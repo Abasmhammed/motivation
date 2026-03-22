@@ -1,40 +1,63 @@
-name: LoFi Stream - Subscribe + Like Only
+name: YouTube Music Loop - 4 Videos Continuous Play
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/20 * * * *'
+    - cron: '0 */4 * * *'  # Restart every 4 hours
 
 jobs:
-  lofi_stream:
+  music_loop:
     runs-on: ubuntu-latest
     steps:
       - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg yt-dlp
 
-      - name: Download LoFi Video
+      - name: Download All 4 Music Videos
         run: |
-          wget -O lofi.mp4 "https://dn721605.ca.archive.org/0/items/snow-silence-winter-lo-fi-chillout-beats-2022/%E2%9D%86%20Snow%20Silence%20%E2%9D%86%20%20Winter%20Lo-fi%20%20Chillout%20%20Beats%20Music%20Mix.mp4"
-          echo "Video downloaded successfully"
+          # Video 1
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "video1.mp4" "https://music.youtube.com/watch?v=IoO9pbEzJ7U"
+          
+          # Video 2  
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "video2.mp4" "https://music.youtube.com/watch?v=KBdyzeA2Fl0"
+          
+          # Video 3
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "video3.mp4" "https://music.youtube.com/watch?v=YuhiLvoTBJY"
+          
+          # Video 4
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "video4.mp4" "https://music.youtube.com/watch?v=BV3NNQytg4g"
+          
+          echo "✅ All 4 videos downloaded:"
+          ls -lh video*.mp4
 
-      - name: Start 24/7 Stream
+      - name: Create Concatenation List
+        run: |
+          cat > playlist.txt << EOF
+          file 'video1.mp4'
+          file 'video2.mp4'
+          file 'video3.mp4'
+          file 'video4.mp4'
+          EOF
+          echo "✅ Playlist ready (4 videos loop)"
+
+      - name: Merge Videos Into Single File
+        run: |
+          ffmpeg -f concat -safe 0 -i playlist.txt -c copy all_videos.mp4 -y
+          echo "✅ Combined video: $(du -h all_videos.mp4)"
+
+      - name: Infinite 24/7 Loop Stream
         env:
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          ffmpeg -stream_loop -1 -re -i lofi.mp4 \
+          ffmpeg -stream_loop -1 -re -i all_videos.mp4 \
             -vf "
               scale=1280:720,
               drawbox=y=0:color=#1976D2@0.95:h=60,
-              drawtext=text='WINTER LOFI 24/7':x=50:y=15:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='%{localtime\:%H:%M} LIVE':x=w-tw-50:y=17:fontsize=24:fontcolor=#BBDEFB,
+              drawtext=text='YOUTUBE MUSIC 24/7 LOOP':x=50:y=15:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='%{localtime\:%H:%M} LIVE - 4 Videos Repeat':x=w-tw-60:y=17:fontsize=24:fontcolor=#BBDEFB,
               
               drawbox=y=h-80:color=#FBC02D@0.9:h=80,
-              drawtext=text='🔔 SUBSCRIBE':x=50:y=h-55:fontsize=36:fontcolor=#1B5E20:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='👍 LIKE':x=w/2-100:y=h-55:fontsize=36:fontcolor=#1B5E20:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
+              drawtext=text='🔔 SUBSCRIBE':x=50:y=h-55:fontsize=36:fontcolor=#1B5E20,
+              drawtext=text='👍 LIKE':x=w/2-100:y=h-55:fontsize=36:fontcolor=#1B5E20
             " \
             -c:v libx264 -preset fast -b:v 2500k -r 30 \
-            -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
-
-      - name: Stream Status
-        run: |
-          echo "✅ LoFi 24/7 Stream is LIVE!"
-          echo "📺 Check YouTube Live Control Room"
+            -c:a aac -b:a 128k \
+            -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
