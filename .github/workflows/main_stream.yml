@@ -1,4 +1,4 @@
-name: Vintage Screen Classics - FIXED 24/7 Stream
+name: Vintage Jazz Classics - 098439 Background Loop
 
 on:
   workflow_dispatch:
@@ -6,52 +6,75 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  streaming:
+  jazz_stream:
     runs-on: ubuntu-latest
     steps:
       - name: Install Media Tools
         run: |
           sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core wget
 
-      - name: Download 4 Verified Videos
+      - name: Download 4 Paul Whiteman Jazz Songs
         run: |
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
-               --tries=3 --timeout=30 -O olympics.mp4 \
-               "https://dn710702.ca.archive.org/0/items/2010_Vancouver_Olympics/Alpine%20Skiing/Downhill/2010.Winter.Olympics.Alpine.Skiing.Men%27s.Downhill.SD.ENG.mp4" || echo "Olympics backup"
+          # الأغاني الأربع (ثابتة)
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+               --tries=5 -O tipperary.mp3 \
+               "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
           
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=3 --timeout=30 -O roscoe.mp4 \
-               "https://dn721900.ca.archive.org/0/items/radio-free-roscoe-2003-06/Radio%20Free%20Roscoe%20_%20S1%20_%20EP%2003%20-%20youtuber%20encore%2B.mp4"
+               --tries=5 -O dancing.mp3 \
+               "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
           
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=3 --timeout=30 -O duesouth.mp4 \
-               "https://ia601504.us.archive.org/31/items/due-south-1994-98/Due%20South%20%281994–98%29%20CA%20crime%20comedy-drama%20-%2060%20of%2067/Due%20South%20%281994%29%20S01E00%20Due%20South%20Season%2001%20Episode%2000%20Pilot%20%5BFull%20Length%5D%20-%202%20hrs.mp4"
+               --tries=5 -O twilight.mp3 \
+               "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
           
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=3 --timeout=30 -O hockey.mp4 \
-               "https://dn721600.ca.archive.org/0/items/canada-vs.-usa-full-game-2019-iihf-ice-hockey-world-championship/Canada%20vs.%20USA%20_%20Full%20Game%20_%202019%20IIHF%20Ice%20Hockey%20World%20Championship.mp4"
-          
-          ls -lh *.mp4
+               --tries=5 -O happiness.mp3 \
+               "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
 
-      - name: 24/7 Seamless Loop Stream
+      - name: Download 098439 Jazz Background (Auto-detect Best Video)
+        run: |
+          # يحاول تحميل أفضل فيديو متاح من 098439 تلقائياً
+          # يجرب H.264 أولاً ثم OGG VIDEO
+          wget --user-agent="Mozilla/5.0" --tries=3 -O jazz_bg.mp4 \
+            "https://archive.org/download/098439/098439.mp4" || \
+          wget --user-agent="Mozilla/5.0" --tries=3 -O jazz_bg.mp4 \
+            "https://archive.org/download/098439/098439.ogv" || \
+          wget --user-agent="Mozilla/5.0" --tries=3 -O jazz_bg.mp4 \
+            "https://archive.org/download/098439/098439.m4v"
+          
+          # تحويل لـ MP4 إذا لزم الأمر
+          ffmpeg -i jazz_bg.mp4 -c copy -movflags +faststart jazz_bg_final.mp4
+          mv jazz_bg_final.mp4 jazz_bg.mp4
+          ls -lh jazz_bg.mp4
+
+      - name: Create 4 Jazz Videos with 098439 Background
+        run: |
+          # كل أغنية + خلفية 098439 = فيديو منفصل
+          for song in tipperary dancing twilight happiness; do
+            ffmpeg -stream_loop -1 -i jazz_bg.mp4 \
+                   -i ${song}.mp3 \
+                   -c:v libx264 -preset ultrafast -b:v 2000k \
+                   -pix_fmt yuv420p \
+                   -c:a aac -b:a 128k \
+                   -shortest \
+                   ${song}_video.mp4
+          done
+          ls -lh *_video.mp4
+
+      - name: 24/7 Quad Jazz Seamless Loop → YouTube Live
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          # Playlist زي الكود القديم
-          echo "file 'olympics.mp4'" > list.txt
-          echo "file 'roscoe.mp4'" >> list.txt  
-          echo "file 'duesouth.mp4'" >> list.txt
-          echo "file 'hockey.mp4'" >> list.txt
+          # قائمة التشغيل: 4 أغاني مع خلفية 098439
+          echo "file 'tipperary_video.mp4'" > jazz_playlist.txt
+          echo "file 'dancing_video.mp4'" >> jazz_playlist.txt
+          echo "file 'twilight_video.mp4'" >> jazz_playlist.txt
+          echo "file 'happiness_video.mp4'" >> jazz_playlist.txt
 
-          ffmpeg -stream_loop -1 -f concat -safe 0 -i list.txt \
-            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=25,\
-                 drawbox=y=0:color=#0f0f23@0.95:width=iw:height=85,\
-                 drawtext=text='VINTAGE SCREEN CLASSICS':x=60:y=25:fontsize=38:fontcolor=#00d4ff:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
-                 drawtext=text='%{localtime\:%H\\:%M} | 24/7 CANADIAN CLASSICS LIVE':x=(w-text_w-60):y=28:fontsize=24:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
-                 drawbox=y=h-110:color=#1e3a8a@0.9:width=iw:height=105,\
-                 drawtext=text='OLYMPIA SKIING → ROSCOE → DUE SOUTH → CANADA vs USA HOCKEY':x=60:y=(h-85):fontsize=26:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
-                 drawtext=text='SUBSCRIBE LIVE 24/7! #VintageHockey':x=(w-text_w)/2:y=(h-50):fontsize=28:fontcolor=#00d4ff:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" \
-            -c:v libx264 -preset ultrafast -b:v 2500k -maxrate 2500k -bufsize 5000k \
-            -pix_fmt yuv420p -r 25 -g 50 -sc_threshold 0 \
-            -c:a aac -b:a 128k -ar 44100 \
+          # بث لووب لا نهائي
+          ffmpeg -stream_loop -1 -f concat -safe 0 -i jazz_playlist.txt \
+            -c:v libx264 -preset ultrafast -b:v 2000k -maxrate 2000k \
+            -pix_fmt yuv420p -r 25 \
+            -c:a aac -b:a 128k \
             -f flv "$RTMP_TARGET"
