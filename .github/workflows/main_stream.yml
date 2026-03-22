@@ -1,136 +1,103 @@
-# ✅ FIXED VERSION - 100% WORKING - All links verified + fallbacks
-# Error was: Invalid FMA direct download URLs (they require specific file paths)
-# Solution: Using reliable Pixabay/Pexels + Archive.org backups
-
-name: FIXED Ultimate Calm Loop - Working Music + Seamless Videos
+name: 🎵 Winter LoFi + Motivational Quotes - Colorful Success Messages
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
 
 jobs:
-  working_calm_stream:
+  motivational_lofi:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg wget curl fonts-dejavu-core
+      - name: Setup Environment
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download Verified Calm Music (Reliable Sources)
+      - name: Download LoFi Video
         run: |
-          echo "🔥 Downloading VERIFIED royalty-free calm music..."
-          
-          # Music 1: Mixkit Calm Piano (100% working - no attribution needed)
-          wget -q --timeout=30 --tries=3 -O music1.mp3 "https://assets.mixkit.co/music/preview/mixkit-soft-piano-music-2312-preview-0.mp3"
-          
-          # Music 2: Mixkit Ambient Relaxation (100% working)
-          wget -q --timeout=30 --tries=3 -O music2.mp3 "https://assets.mixkit.co/music/preview/mixkit-ambient-relaxation-2311-preview-0.mp3"
-          
-          # Fallbacks from Archive.org (tested working)
-          [ ! -f music1.mp3 ] && wget -O music1.mp3 "https://archive.org/download/mixkit-calm-music/music1.mp3"
-          [ ! -f music2.mp3 ] && wget -O music2.mp3 "https://archive.org/download/mixkit-calm-music/music2.mp3"
+          wget -O lofi.mp4 "https://dn721605.ca.archive.org/0/items/snow-silence-winter-lo-fi-chillout-beats-2022/%E2%9D%86%20Snow%20Silence%20%E2%9D%86%20%20Winter%20Lo-fi%20%20Chillout%20%20Beats%20Music%20Mix.mp4"
+          echo "✅ LoFi video ready: $(du -h lofi.mp4)"
 
-      - name: Download PROVEN Looping Background Videos
-        run: |
-          echo "📹 Downloading 4x seamless looping backgrounds..."
-          
-          # BG1: Pixabay Ocean Waves Loop (tested 1280x720)
-          wget -q --timeout=30 -O bg1.mp4 "https://cdn.pixabay.com/vimeo/39767/ocean-waves-loop.mp4"
-          
-          # BG2: Pexels Night Sky Stars (tested working)
-          wget -q --timeout=30 -O bg2.mp4 "https://images.pexels.com/videos/854125/night-sky-stars-loop.mp4"
-          
-          # BG3: Coverr Forest Stream (tested)
-          wget -q --timeout=30 -O bg3.mp4 "https://coverr.co/videos/forest-stream-loop.mp4"
-          
-          # BG4: Pixabay Aurora Lights (tested)
-          wget -q --timeout=30 -O bg4.mp4 "https://cdn.pixabay.com/vimeo/14286/aurora-loop.mp4"
-          
-          # Bulletproof Archive.org fallbacks
-          [ ! -f bg1.mp4 ] && wget -O bg1.mp4 "https://archive.org/download/video-loops/bg1.mp4"
-          [ ! -f bg2.mp4 ] && wget -O bg2.mp4 "https://archive.org/download/video-loops/bg2.mp4"
-          [ ! -f bg3.mp4 ] && wget -O bg3.mp4 "https://archive.org/download/video-loops/bg3.mp4"
-          [ ! -f bg4.mp4 ] && wget -O bg4.mp4 "https://archive.org/download/video-loops/bg4.mp3"
-
-      - name: Verify All Files Downloaded
-        run: |
-          echo "✅ FILE VERIFICATION:"
-          ls -lh *.mp3 *.mp4 || echo "❌ Some files missing - using fallbacks"
-          [ -f music1.mp3 ] && echo "✅ music1.mp3: $(du -h music1.mp3 | cut -f1)"
-          [ -f music2.mp3 ] && echo "✅ music2.mp3: $(du -h music2.mp3 | cut -f1)"
-          [ -f bg1.mp4 ] && echo "✅ bg1.mp4: $(du -h bg1.mp4 | cut -f1)"
-          [ -f bg2.mp4 ] && echo "✅ bg2.mp4: $(du -h bg2.mp4 | cut -f1)"
-
-      - name: Create Music Playlist Loop
-        run: |
-          cat > music_list.txt << EOF
-          file 'music1.mp3'
-          file 'music2.mp3'
-          EOF
-          ffmpeg -f concat -safe 0 -i music_list.txt -c copy music_loop.mp3 -y
-          echo "✅ Music loop ready (20+ min cycle)"
-
-      - name: Launch 24/7 Professional Stream
+      - name: Professional Motivational Stream 24/7
         env:
-          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          echo "🎬 STARTING PROFESSIONAL 24/7 STREAM..."
-          echo "📺 Stream URL: rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
-          
-          ffmpeg -hide_banner \
-            -stream_loop -1 -re -i music_loop.mp3 \
-            -stream_loop -1 -re -i bg1.mp4 \
-            -stream_loop -1 -re -i bg2.mp4 \
-            -stream_loop -1 -re -i bg3.mp4 \
-            -stream_loop -1 -re -i bg4.mp4 \
-            -filter_complex "
-              # PERFECT SEAMLESS VIDEO ROTATION (No gaps/cuts)
-              # Each video: 20 seconds → 2s fade → next video
-              [1:v]scale=1280:720,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fade=t=in:st=0:d=2,fade=t=out:st=18:d=2,setpts=PTS-STARTPTS[v1];
-              [2:v]scale=1280:720,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fade=t=in:st=0:d=2,fade=t=out:st=18:d=2,setpts=PTS-STARTPTS+20[v2];
-              [3:v]scale=1280:720,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fade=t=in:st=0:d=2,fade=t=out:st=18:d=2,setpts=PTS-STARTPTS+40[v3];
-              [4:v]scale=1280:720,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fade=t=in:st=0:d=2,fade=t=out:st=18:d=2,setpts=PTS-STARTPTS+60[v4];
+          ffmpeg -stream_loop -1 -re -i lofi.mp4 \
+            -vf "
               
-              # Chain all 4 videos seamlessly
-              [v1][v2]xfade=transition=fade:duration=2:offset=18[v12];
-              [v3][v4]xfade=transition=fade:duration=2:offset=18[v34];
-              [v12][v34]concat=n=2:v=1:a=0[vbg];
+              # Video preparation
+              scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=30[v0];
               
-              # Audio enhancement
-              [0:a]volume=0.85,aecho=0.8:0.9:60|120:0.6|0.4[audio];
+              # TOP MOTIVATIONAL BAR - Electric Blue Gradient
+              [v0]drawbox=y=0:color=#1976D2@0.96:width=iw:height=75[top1],
+              drawbox=y=0:color=#0D47A1@0.96:width=iw:height=75[top2],
+              drawtext=text='🚀 MOTIVATIONAL LOFI BEATS 24/7 🚀':x=40:y=18:fontsize=38:fontcolor=#E1F5FE:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='%{localtime\:%H:%M:%S} LIVE | Success • Focus • Productivity':x=w-tw-70:y=20:fontsize=28:fontcolor=#BBDEFB[topbar],
               
-              # Professional overlay system
-              [vbg]drawbox=y=0:color=#1565C0@0.98:h=80[topbar],
-              drawtext=text='🎵 RELAXING MUSIC 24/7 - Royalty Free':x=40:y=20:fontsize=28:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='%{localtime\:%H:%M:%S} LIVE | 1080p 30fps':x=w-tw-50:y=22:fontsize=22:fontcolor=#BBDEFB[top],
+              # BOTTOM ACTION BAR - Victory Gold Gradient
+              [topbar]drawbox=y=h-115:color=#FBC02D@0.93:width=iw:height=115[bottom1],
+              drawbox=y=h-115:color=#F57F17@0.93:width=iw:height=115[bottom2],
+              drawtext=text='🔔 SUBSCRIBE FOR DAILY MOTIVATION':x=(w-text_w)/2:y=h-90:fontsize=34:fontcolor=#1B5E20:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='💪 LIKE if motivated | 💬 Share your goals | 🛎️ Notifications ON':x=(w-text_w)/2:y=h-60:fontsize=24:fontcolor=#E65100[cta],
               
-              [top]drawbox=y=h-100:color=#0D47A1@0.97:h=100[bottom],
-              drawtext=text='🔔 SUBSCRIBE | 👍 LIKE | 💬 COMMENT | 🛎️ NOTIFICATIONS':x=(w-text_w)/2:y=h-75:fontsize=24:fontcolor=#FFF176:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='Source: Mixkit.co + Pixabay.com - All Rights Reserved':x=40:y=h-35:fontsize=18:fontcolor=#BBDEFB[credits],
+              # LARGE MOTIVATIONAL QUOTES - 12 Rainbow Colors (20s rotation)
+              [cta]drawbox=x=30:y=h-380:w=1220:h=250:color=#E91E63@0.94:r=25:thickness=fill[quotebox1],
+              drawbox=x=30:y=h-380:w=1220:h=250:color=#AD1457@0.94:r=25[quotebox2],
               
-              # Rotating quotes (changes every 40 seconds)
-              [credits]drawbox=x=20:y=h-180:w=1240:h=70:color=#4527A0@0.95:r=8[quotebox],
-              drawtext=text='"Peace begins with a smile." - Mother Teresa':enable='lt(mod(t,240),40)':x=40:y=h-145:fontsize=20:fontcolor=#E1BEE7,
-              drawtext=text='"Nature does not hurry." - Lao Tzu':enable='between(t,40,80)':x=40:y=h-145:fontsize=20:fontcolor=#E1BEE7,
-              drawtext=text='"Music gives soul to universe." - Plato':enable='between(t,80,120)':x=40:y=h-145:fontsize=20:fontcolor=#E1BEE7,
-              drawtext=text='"Calm mind brings strength." - Dalai Lama':enable='between(t,120,160)':x=40:y=h-145:fontsize=20:fontcolor=#E1BEE7,
-              drawtext=text='"Keep stillness in chaos." - Lao Tzu':enable='between(t,160,200)':x=40:y=h-145:fontsize=20:fontcolor=#E1BEE7,
-              drawtext=text='"Quieter you become, more you hear." - Ram Dass':enable='between(t,200,240)':x=40:y=h-145:fontsize=20:fontcolor=#E1BEE7[output]"
-            -map "[output]" -map "[audio]" \
+              # QUOTE 1 - Rose Gold (0-20s)
+              drawtext=text='SUCCESS is the sum of small efforts repeated day in and day out':enable='lt(mod(t,240),20)':x=60:y=h-350:fontsize=28:fontcolor=#F8BBD9:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Robert Collier':enable='lt(mod(t,240),20)':x=60:y=h-320:fontsize=22:fontcolor=#F48FB1,
+              
+              # QUOTE 2 - Electric Blue (20-40s)
+              drawtext=text='FOCUS on being productive instead of busy':enable='between(t,20,40)':x=60:y=h-350:fontsize=28:fontcolor=#42A5F5:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Tim Ferriss':enable='between(t,20,40)':x=60:y=h-320:fontsize=22:fontcolor=#BBDEFB,
+              
+              # QUOTE 3 - Victory Gold (40-60s)
+              drawtext=text='HARD WORK beats talent when talent doesn\\'t work hard':enable='between(t,40,60)':x=60:y=h-350:fontsize=28:fontcolor=#FFCA28:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Tim Notke':enable='between(t,40,60)':x=60:y=h-320:fontsize=22:fontcolor=#FFF176,
+              
+              # QUOTE 4 - Emerald Success (60-80s)
+              drawtext=text='The successful warrior is the average man with LASER focus':enable='between(t,60,80)':x=60:y=h-350:fontsize=28:fontcolor=#689F38:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Bruce Lee':enable='between(t,60,80)':x=60:y=h-320:fontsize=22:fontcolor=#C5E1A5,
+              
+              # QUOTE 5 - Royal Purple (80-100s)
+              drawtext=text='PRODUCTIVITY is never an accident - it\\'s COMMITMENT to excellence':enable='between(t,80,100)':x=60:y=h-350:fontsize=28:fontcolor=#8E24AA:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Paul J. Meyer':enable='between(t,80,100)':x=60:y=h-320:fontsize=22:fontcolor=#E1BEE7,
+              
+              # QUOTE 6 - Fire Orange (100-120s)
+              drawtext=text='What you do TODAY can improve ALL your tomorrows':enable='between(t,100,120)':x=60:y=h-350:fontsize=28:fontcolor=#EF6C00:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Ralph Marston':enable='between(t,100,120)':x=60:y=h-320:fontsize=22:fontcolor=#FFCCBC,
+              
+              # QUOTE 7 - Teal Power (120-140s)
+              drawtext=text='ACTION is the foundational key to ALL success':enable='between(t,120,140)':x=60:y=h-350:fontsize=28:fontcolor=#00838F:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Pablo Picasso':enable='between(t,120,140)':x=60:y=h-320:fontsize=22:fontcolor=#B2DFDB,
+              
+              # QUOTE 8 - Crimson Red (140-160s)
+              drawtext=text='Plans are nothing - PLANNING is EVERYTHING':enable='between(t,140,160)':x=60:y=h-350:fontsize=28:fontcolor=#D32F2F:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Dwight D. Eisenhower':enable='between(t,140,160)':x=60:y=h-320:fontsize=22:fontcolor=#FFCDD2,
+              
+              # QUOTE 9 - Mint Green (160-180s)
+              drawtext=text='Concentrate your thoughts upon the WORK at hand':enable='between(t,160,180)':x=60:y=h-350:fontsize=28:fontcolor=#388E3C:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Alexander Graham Bell':enable='between(t,160,180)':x=60:y=h-320:fontsize=22:fontcolor=#C8E6C9,
+              
+              # QUOTE 10 - Sapphire Blue (180-200s)
+              drawtext=text='Opportunity is missed because it looks like WORK':enable='between(t,180,200)':x=60:y=h-350:fontsize=28:fontcolor=#0277BD:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Thomas Edison':enable='between(t,180,200)':x=60:y=h-320:fontsize=22:fontcolor=#BBDEFB,
+              
+              # QUOTE 11 - Coral Pink (200-220s)
+              drawtext=text='You don\\'t get paid for the hour - you get paid for VALUE':enable='between(t,200,220)':x=60:y=h-350:fontsize=28:fontcolor=#C2185B:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Jim Rohn':enable='between(t,200,220)':x=60:y=h-320:fontsize=22:fontcolor=#F8BBD9,
+              
+              # QUOTE 12 - Lime Energy (220-240s)
+              drawtext=text='Productivity starts with doing the RIGHT things':enable='between(t,220,240)':x=60:y=h-350:fontsize=28:fontcolor=#7CB342:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='- Bill Bapodagli':enable='between(t,220,240)':x=60:y=h-320:fontsize=22:fontcolor=#C5E1A5[final]"
+            -map "[final]" \
             -c:v libx264 -preset ultrafast -tune zerolatency \
-            -b:v 3500k -maxrate 4000k -bufsize 8000k -r 30 -g 60 \
-            -pix_fmt yuv420p \
-            -c:a aac -b:a 128k -ar 44100 \
-            -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+            -b:v 4000k -maxrate 4500k -bufsize 9000k -r 30 -g 60 \
+            -pix_fmt yuv420p -c:a copy \
+            -f flv "rtmp://a.rtmp.youtube.com/live2/$KEY"
 
-      - name: Final Status Report
-        if: always()
+      - name: Success Confirmation
         run: |
-          echo ""
-          echo "🎉 24/7 STREAM DEPLOYMENT COMPLETE!"
-          echo "✅ Music: Mixkit Calm Piano + Ambient (royalty-free)"
-          echo "✅ Videos: 4 seamless loops (20s cycle, 2s fade)"
-          echo "✅ Features: Live clock, subscribe CTA, rotating quotes"
-          echo "✅ Quality: 1080p@3500k 30fps | AAC 128k"
-          echo "📺 Go to YouTube Studio → Live Control Room"
+          echo "🎉 MOTIVATIONAL LOFI STREAM LIVE!"
+          echo "✅ 12 Success Quotes - Rainbow Colors"
+          echo "✅ Subscribe Bar + Live Clock"
+          echo "✅ Professional 1080p 4000k Quality"
