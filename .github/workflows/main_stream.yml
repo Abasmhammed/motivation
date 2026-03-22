@@ -1,4 +1,4 @@
-name: Vintage Screen Classics - 24/7 Sports & Movies Marathon
+name: Vintage Screen Classics - FIXED 24/7 Stream
 
 on:
   workflow_dispatch:
@@ -11,65 +11,47 @@ jobs:
     steps:
       - name: Install Media Tools
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core wget curl
+          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core wget
 
-      - name: Download Verified Content
+      - name: Download 4 Verified Videos
         run: |
-          echo "Downloading 4K Sports & Classic Content..."
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+               --tries=3 --timeout=30 -O olympics.mp4 \
+               "https://dn710702.ca.archive.org/0/items/2010_Vancouver_Olympics/Alpine%20Skiing/Downhill/2010.Winter.Olympics.Alpine.Skiing.Men%27s.Downhill.SD.ENG.mp4" || echo "Olympics backup"
           
-          # Olympics Skiing (Canada 2010)
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=5 --waitretry=10 -O olympics.mp4 \
-               "https://dn710702.ca.archive.org/0/items/2010_Vancouver_Olympics/Alpine%20Skiing/Downhill/2010.Winter.Olympics.Alpine.Skiing.Men%27s.Downhill.SD.ENG.mp4"
-          
-          # Radio Free Roscoe S1E3 (Canadian Classic)
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=5 --waitretry=10 -O roscoe.mp4 \
+               --tries=3 --timeout=30 -O roscoe.mp4 \
                "https://dn721900.ca.archive.org/0/items/radio-free-roscoe-2003-06/Radio%20Free%20Roscoe%20_%20S1%20_%20EP%2003%20-%20youtuber%20encore%2B.mp4"
           
-          # Due South Pilot (2hrs Canadian Drama)
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=5 --waitretry=10 -O duesouth.mp4 \
+               --tries=3 --timeout=30 -O duesouth.mp4 \
                "https://ia601504.us.archive.org/31/items/due-south-1994-98/Due%20South%20%281994–98%29%20CA%20crime%20comedy-drama%20-%2060%20of%2067/Due%20South%20%281994%29%20S01E00%20Due%20South%20Season%2001%20Episode%2000%20Pilot%20%5BFull%20Length%5D%20-%202%20hrs.mp4"
           
-          # Canada vs USA Hockey 2019 IIHF
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               --tries=5 --waitretry=10 -O hockey2019.mp4 \
+               --tries=3 --timeout=30 -O hockey.mp4 \
                "https://dn721600.ca.archive.org/0/items/canada-vs.-usa-full-game-2019-iihf-ice-hockey-world-championship/Canada%20vs.%20USA%20_%20Full%20Game%20_%202019%20IIHF%20Ice%20Hockey%20World%20Championship.mp4"
           
-          # Verify downloads
           ls -lh *.mp4
-          ffprobe -v quiet -print_format json -show_streams *.mp4
 
-      - name: 24/7 Vintage Stream with Channel Branding
+      - name: 24/7 Seamless Loop Stream
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          # Create seamless playlist (loops forever like classic 3-movie code)
-          cat > playlist.txt << EOF
-          file 'olympics.mp4'
-          file 'roscoe.mp4'
-          file 'duesouth.mp4'
-          file 'hockey2019.mp4'
-          EOF
+          # Playlist زي الكود القديم
+          echo "file 'olympics.mp4'" > list.txt
+          echo "file 'roscoe.mp4'" >> list.txt  
+          echo "file 'duesouth.mp4'" >> list.txt
+          echo "file 'hockey.mp4'" >> list.txt
 
-          # Download Vintage Screen Classics logo (simple text overlay as logo)
-          curl -s -o logo.png https://via.placeholder.com/300x100/FF6B35/FFFFFF?text=VSC || \
-          ffmpeg -f lavfi -i color=c=black:s=300x100:r=1 -vf "drawtext=text='Vintage Screen Classics':fontsize=24:fontcolor=white:x=(w-text_w)/2:y=(h-text_h)/2" -frames:v 1 logo.png
-
-          ffmpeg -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -i logo.png \
-            -filter_complex "\
-              [0:v]scale=1280:720,fps=25[base];\
-              [base][1:0]overlay=W-w-20:H-h-20[video];\
-              [video]drawbox=y=0:color=#1a1a2e@0.9:width=iw:height=90,drawtext=text='VINTAGE SCREEN CLASSICS':x=50:y=25:fontsize=36:fontcolor=#FF6B35:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
-              drawtext=text='%{localtime\:%Y-%m-%d %H\\:%M\\:%S} | 24/7 CLASSIC CANADIAN CONTENT':x=w-text_w-50:y=28:fontsize=24:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[header];\
-              [header]drawbox=y=h-120:color=#16213E@0.85:width=iw:height=110,drawtext=text='🏔️ Olympics | 📺 Roscoe | 🇨🇦 Due South | 🏒 Canada vs USA':x=50:y=h-90:fontsize=28:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
-              drawtext=text='LIVE 24/7 MARATHON - SUBSCRIBE FOR MORE VINTAGE GEMS! 🎥❄️':x=(w-text_w)/2:y=h-55:fontsize=26:fontcolor=#FF6B35:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
-              drawtext=text='vintagescreenclassics.com':x=w-text_w-50:y=h-55:fontsize=22:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf[final]" \
-            -map "[final]" -map 0:a \
-            -c:v libx264 -preset veryfast -b:v 2800k -maxrate 2800k -bufsize 5600k \
-            -pix_fmt yuv420p -r 25 -g 50 -keyint_min 50 -sc_threshold 0 \
-            -c:a aac -b:a 128k -ar 44100 -af "volume=1.1" \
+          ffmpeg -stream_loop -1 -f concat -safe 0 -i list.txt \
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,fps=25,\
+                 drawbox=y=0:color=#0f0f23@0.95:width=iw:height=85,\
+                 drawtext=text='VINTAGE SCREEN CLASSICS':x=60:y=25:fontsize=38:fontcolor=#00d4ff:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
+                 drawtext=text='%{localtime\:%H\\:%M} | 24/7 CANADIAN CLASSICS LIVE':x=(w-text_w-60):y=28:fontsize=24:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
+                 drawbox=y=h-110:color=#1e3a8a@0.9:width=iw:height=105,\
+                 drawtext=text='OLYMPIA SKIING → ROSCOE → DUE SOUTH → CANADA vs USA HOCKEY':x=60:y=(h-85):fontsize=26:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
+                 drawtext=text='SUBSCRIBE LIVE 24/7! #VintageHockey':x=(w-text_w)/2:y=(h-50):fontsize=28:fontcolor=#00d4ff:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" \
+            -c:v libx264 -preset ultrafast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+            -pix_fmt yuv420p -r 25 -g 50 -sc_threshold 0 \
+            -c:a aac -b:a 128k -ar 44100 \
             -f flv "$RTMP_TARGET"
