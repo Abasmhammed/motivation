@@ -1,4 +1,4 @@
-name: Vintage Jazz 24/7 - 7 Songs + 4 Backgrounds
+name: Vintage Jazz 24/7 - Trending Songs + 4 Backgrounds
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download 7 Jazz Songs ✅
+      - name: Download 9 Jazz Songs ✅
         run: |
           wget -q -O tipperary.mp3 "https://archive.org/download/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
           wget -q -O dancing.mp3 "https://archive.org/download/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
@@ -23,19 +23,21 @@ jobs:
           wget -q -O cotton.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-cotton%20pickers%20got%20to%20cool%20my%20doggies%20now.mp3"
           wget -q -O chicago.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-aileen%20stanley%20chicago.mp3"
           wget -q -O robin.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-al%20jolson%20when%20the%20red%20red%20robin%20comes%20bob%20bob%20bobin%20along.mp3"
+          wget -q -O baker.mp3 "https://archive.org/download/josephinebakerparis/Josephine%20Baker%20-%20Paris.mp3"
+          wget -q -O susie.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-abe%20lyman%20s%20california%20orchestra%20if%20you%20knew%20susie.mp3"
           echo "=== Songs ==="
           ls -lh *.mp3
 
-      - name: Download 4 Backgrounds ✅
+      - name: Download 3 Backgrounds + Copy ✅
         run: |
           wget -q -O bg1.mp4 "https://archive.org/download/098439/098439.mp4"
           wget -q -O bg2.mp4 "https://archive.org/download/NewberryMMSWackerReel1080/Newberry_MMS_Wacker_Reel_002_1080.mp4"
           wget -q -O bg3.mp4 "https://archive.org/download/fksBOca4gEEjgpco7TJJUUzEU71ncT/tmpsjj3tww8.mp4"
-          wget -q -O bg4.mp4 "https://archive.org/download/19201928publicdomainanimation/Metropolis_1927_KW.mp4"
+          cp bg1.mp4 bg4.mp4
           echo "=== Backgrounds ==="
           ls -lh *.mp4
 
-      - name: Create 7 Videos
+      - name: Create 9 Videos
         run: |
           make_video() {
             local song=$1 bg=$2 title=$3 output=$4
@@ -60,6 +62,8 @@ jobs:
           make_video cotton.mp3    bg1.mp4 "Cotton Pickers - Cool My Doggies" v5.mp4
           make_video chicago.mp3   bg2.mp4 "Aileen Stanley - Chicago"         v6.mp4
           make_video robin.mp3     bg3.mp4 "Al Jolson - Red Red Robin"        v7.mp4
+          make_video baker.mp3     bg4.mp4 "Josephine Baker - Paris"          v8.mp4
+          make_video susie.mp3     bg1.mp4 "If You Knew Susie - Abe Lyman"    v9.mp4
 
           echo "=== All Videos ==="
           ls -lh *.mp4
@@ -68,7 +72,7 @@ jobs:
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          printf "file 'v1.mp4'\nfile 'v2.mp4'\nfile 'v3.mp4'\nfile 'v4.mp4'\nfile 'v5.mp4'\nfile 'v6.mp4'\nfile 'v7.mp4'\n" > playlist.txt
+          printf "file 'v1.mp4'\nfile 'v2.mp4'\nfile 'v3.mp4'\nfile 'v4.mp4'\nfile 'v5.mp4'\nfile 'v6.mp4'\nfile 'v7.mp4'\nfile 'v8.mp4'\nfile 'v9.mp4'\n" > playlist.txt
 
           ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
             -c:v libx264 -preset ultrafast -tune zerolatency \
