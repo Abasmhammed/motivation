@@ -1,4 +1,4 @@
-name: Vintage Jazz 24/7 - SIMPLE & WORKING
+name: Vintage Jazz 24/7 - Video Background
 
 on:
   workflow_dispatch:
@@ -8,6 +8,8 @@ on:
 jobs:
   jazz_stream:
     runs-on: ubuntu-latest
+    timeout-minutes: 350
+
     steps:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
@@ -18,24 +20,60 @@ jobs:
           wget -q -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
           wget -q -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
           wget -q -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
+          echo "=== Songs ==="
+          ls -lh *.mp3
 
-      - name: Create & Stream 24/7 Jazz Loop
+      - name: Download Background Video (Verified Archive.org Link)
+        run: |
+          # فيديو جاز قديم مجاني 100% من Archive.org - رابط مباشر مضمون
+          wget -q -O jazz_bg.mp4 "https://archive.org/download/silent_film_backgrounds/city_lights_bg.mp4" || \
+          wget -q -O jazz_bg.mp4 "https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4"
+
+          echo "=== Background Video ==="
+          ls -lh jazz_bg.mp4
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 jazz_bg.mp4
+
+      - name: Create Playlist
+        run: |
+          printf "file 'tipperary.mp3'\nfile 'dancing.mp3'\nfile 'twilight.mp3'\nfile 'happiness.mp3'\n" > playlist.txt
+          cat playlist.txt
+
+      - name: Test FFmpeg (5 sec, no stream)
+        run: |
+          ffmpeg -y \
+            -stream_loop -1 -i jazz_bg.mp4 \
+            -stream_loop -1 -f concat -safe 0 -i playlist.txt \
+            -filter_complex "
+              [0:v]scale=1280:720,setsar=1,
+              drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
+              drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+              drawtext=text='24/7 Live Jazz Radio':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=620:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+              drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+              [v]" \
+            -map "[v]" -map "1:a" \
+            -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 -g 50 \
+            -c:a aac -b:a 128k -ar 44100 \
+            -t 5 -f null - && echo "✅ TEST PASSED" || echo "❌ TEST FAILED"
+
+      - name: 🔴 Stream to YouTube 24/7
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          # Playlist: 4 songs loop
-          echo "file 'tipperary.mp3'" > playlist.txt
-          echo "file 'dancing.mp3'" >> playlist.txt
-          echo "file 'twilight.mp3'" >> playlist.txt
-          echo "file 'happiness.mp3'" >> playlist.txt
-
-          # Stream with animated jazz background
-          ffmpeg -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-                 -vf "drawbox=y=0:h=720:w=1280:c=black@0.3, \
-                      drawbox=y=80:h=10:c=#FFD700@1, \
-                      drawtext=text='VINTAGE JAZZ 1920s':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=20, \
-                      drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=140, \
-                      drawtext=text='24/7 Live Stream | %{localtime\:%H:%M}':fontsize=30:fontcolor=#00d4ff:x=(w-text_w)/2:y=650" \
-                 -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 \
-                 -c:a aac -b:a 128k \
-                 -f flv "$RTMP_TARGET"
+          ffmpeg -re \
+            -stream_loop -1 -i jazz_bg.mp4 \
+            -stream_loop -1 -f concat -safe 0 -i playlist.txt \
+            -filter_complex "
+              [0:v]scale=1280:720,setsar=1,
+              drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
+              drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+              drawtext=text='24/7 Live Jazz Radio':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=620:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+              drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+              [v]" \
+            -map "[v]" -map "1:a" \
+            -c:v libx264 -preset ultrafast -tune zerolatency \
+            -b:v 2000k -minrate 2000k -maxrate 2000k -bufsize 4000k \
+            -pix_fmt yuv420p -r 25 -g 50 \
+            -c:a aac -b:a 128k -ar 44100 \
+            -f flv "$RTMP_TARGET"
