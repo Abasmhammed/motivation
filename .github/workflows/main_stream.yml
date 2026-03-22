@@ -1,4 +1,4 @@
-name: Vintage Jazz 24/7 - Video Background
+name: Vintage Jazz 24/7 - 7 Songs + 4 Backgrounds
 
 on:
   workflow_dispatch:
@@ -14,61 +14,63 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download 4 Paul Whiteman Songs
+      - name: Download 7 Jazz Songs ✅
         run: |
           wget -q -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
           wget -q -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
           wget -q -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
           wget -q -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
+          wget -q -O cotton.mp3 "https://dn710700.ca.archive.org/0/items/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-cotton%20pickers%20got%20to%20cool%20my%20doggies%20now.mp3"
+          wget -q -O chicago.mp3 "https://dn710700.ca.archive.org/0/items/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-aileen%20stanley%20chicago.mp3"
+          wget -q -O robin.mp3 "https://dn710700.ca.archive.org/0/items/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-al%20jolson%20when%20the%20red%20red%20robin%20comes%20bob%20bob%20bobin%20along.mp3"
           echo "=== Songs ==="
           ls -lh *.mp3
 
-      - name: Download Background Video
+      - name: Download 4 Backgrounds ✅
         run: |
-          wget -q -O jazz_bg.mp4 "https://dn790001.ca.archive.org/0/items/098439/098439.mp4"
-          echo "=== Background Video ==="
-          ls -lh jazz_bg.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 jazz_bg.mp4
+          wget -q -O bg1.mp4 "https://dn790001.ca.archive.org/0/items/098439/098439.mp4"
+          wget -q -O bg2.mp4 "https://dn711309.ca.archive.org/0/items/NewberryMMSWackerReel1080/Newberry_MMS_Wacker_Reel_002_1080.mp4"
+          wget -q -O bg3.mp4 "https://dn721804.ca.archive.org/0/items/fksBOca4gEEjgpco7TJJUUzEU71ncT/tmpsjj3tww8.mp4"
+          wget -q -O bg4.mp4 "https://dn720405.ca.archive.org/0/items/19201928publicdomainanimation/Metropolis_1927_KW.mp4"
+          echo "=== Backgrounds ==="
+          ls -lh *.mp4
 
-      - name: Create Playlist
+      - name: Create 7 Videos
         run: |
-          printf "file 'tipperary.mp3'\nfile 'dancing.mp3'\nfile 'twilight.mp3'\nfile 'happiness.mp3'\n" > playlist.txt
-          cat playlist.txt
+          make_video() {
+            local song=$1 bg=$2 title=$3 output=$4
+            ffmpeg -y -stream_loop -1 -i $bg -i $song \
+              -filter_complex "[0:v]scale=1280:720,setsar=1,
+                drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
+                drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=50:fontcolor=#FFD700:x=(w-text_w)/2:y=25:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+                drawtext=text='$title':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=90:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+                drawtext=text='24/7 Live Jazz Radio':fontsize=26:fontcolor=#00d4ff:x=(w-text_w)/2:y=625:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+                drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=22:fontcolor=#aaffaa:x=20:y=685:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf[v]" \
+              -map "[v]" -map "1:a" \
+              -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 \
+              -c:a aac -b:a 128k -ar 44100 \
+              -shortest $output
+            echo "✅ Done: $output"
+          }
 
-      - name: Test FFmpeg (5 sec, no stream)
-        run: |
-          ffmpeg -y \
-            -stream_loop -1 -i jazz_bg.mp4 \
-            -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -filter_complex "
-              [0:v]scale=1280:720,setsar=1,
-              drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
-              drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='24/7 Live Jazz Radio':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=620:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
-              [v]" \
-            -map "[v]" -map "1:a" \
-            -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 -g 50 \
-            -c:a aac -b:a 128k -ar 44100 \
-            -t 5 -f null - && echo "✅ TEST PASSED" || echo "❌ TEST FAILED"
+          make_video tipperary.mp3 bg1.mp4 "It's a Long Way to Tipperary"     v1.mp4
+          make_video dancing.mp3   bg2.mp4 "A Boy and a Girl Were Dancing"     v2.mp4
+          make_video twilight.mp3  bg3.mp4 "At Twilight"                       v3.mp4
+          make_video happiness.mp3 bg4.mp4 "All For You - Happiness"           v4.mp4
+          make_video cotton.mp3    bg1.mp4 "Cotton Pickers - Cool My Doggies"  v5.mp4
+          make_video chicago.mp3   bg2.mp4 "Aileen Stanley - Chicago"          v6.mp4
+          make_video robin.mp3     bg3.mp4 "Al Jolson - Red Red Robin"         v7.mp4
+
+          echo "=== All Videos ==="
+          ls -lh *.mp4
 
       - name: 🔴 Stream to YouTube 24/7
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          ffmpeg -re \
-            -stream_loop -1 -i jazz_bg.mp4 \
-            -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -filter_complex "
-              [0:v]scale=1280:720,setsar=1,
-              drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
-              drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='24/7 Live Jazz Radio':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=620:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
-              [v]" \
-            -map "[v]" -map "1:a" \
+          printf "file 'v1.mp4'\nfile 'v2.mp4'\nfile 'v3.mp4'\nfile 'v4.mp4'\nfile 'v5.mp4'\nfile 'v6.mp4'\nfile 'v7.mp4'\n" > playlist.txt
+
+          ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
             -c:v libx264 -preset ultrafast -tune zerolatency \
             -b:v 2000k -minrate 2000k -maxrate 2000k -bufsize 4000k \
             -pix_fmt yuv420p -r 25 -g 50 \
