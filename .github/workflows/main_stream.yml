@@ -1,4 +1,4 @@
-name: Vintage Jazz Complete - WORKING Background
+name: Vintage Jazz 24/7 - SIMPLE & WORKING
 
 on:
   workflow_dispatch:
@@ -9,80 +9,33 @@ jobs:
   jazz_stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg wget python3-pip
-          pip3 install -U internetarchive
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
       - name: Download 4 Paul Whiteman Songs
         run: |
-          echo "Downloading jazz classics..."
-          wget --user-agent="Mozilla/5.0" --tries=5 -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
-          wget --user-agent="Mozilla/5.0" --tries=5 -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
-          wget --user-agent="Mozilla/5.0" --tries=5 -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
-          wget --user-agent="Mozilla/5.0" --tries=5 -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
-          ls -lh *.mp3
+          wget -q -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
+          wget -q -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
+          wget -q -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
+          wget -q -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
 
-      - name: Download 098439 Background OR Create Professional Backup
-        run: |
-          echo "Trying 098439 download..."
-          cd /tmp
-          
-          # Method 1: Official ia tool with metadata
-          ia configure --no-config --read-only || true
-          ia download 098439 --glob="*.mp4" --glob="*.ogv" --destdir=. || \
-          ia download 098439 --destdir=. || echo "ia failed, creating backup"
-          
-          # Method 2: Direct download common files
-          wget -T 30 --user-agent="Mozilla/5.0" -O 098439.mp4 "https://archive.org/download/098439/098439.mp4" || \
-          wget -T 30 --user-agent="Mozilla/5.0" -O 098439.mp4 "https://archive.org/download/098439/098439.ogv" || \
-          wget -T 30 --user-agent="Mozilla/5.0" -O 098439.mp4 "https://archive.org/download/098439/098439.m4v" || \
-          ls -lh *.mp4 *.ogv 2>/dev/null || echo "No video found"
-          
-          # Method 3: Create professional 1920s jazz background (GUARANTEED)
-          if [ ! -f "098439.mp4" ] || [ ! -s "098439.mp4" ]; then
-            echo "Creating professional jazz background..."
-            ffmpeg -y -f lavfi -i color=color=#0f0f23:size=1280x720:duration=60 \
-                   -vf "drawbox=y=90:h=8:c=#FFD700@1,
-                        drawbox=y=90:h=8:c=#FF8C00@0.7:t=fill,
-                        drawbox=y=630:h=8:c=#00d4ff@1,
-                        drawtext=text='VINTAGE JAZZ 1920s-1930s':fontsize=52:fontcolor=#FFD700@1:fontweight=bold:x=(w-text_w)/2:y=25,
-                        drawtext=text='098439 Golden Era':fontsize=38:fontcolor=white:x=(w-text_w)/2:y=150,
-                        drawtext=text='Paul Whiteman Sessions | %{localtime\:%H:%M}':fontsize=32:fontcolor=#FFD700:x=(w-text_w)/2:y=220,
-                        drawtext=text='24/7 Live Stream | Public Domain':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=660" \
-                   098439.mp4
-          fi
-          
-          mv 098439.mp4 /jazz_bg.mp4
-          cd /
-          echo "✅ Background ready:"
-          ls -lh jazz_bg.mp4
-          ffprobe jazz_bg.mp4 2>&1 | grep Duration
-
-      - name: Create 4 Complete Jazz Videos
-        run: |
-          echo "Creating 4 jazz videos..."
-          for song in tipperary dancing twilight happiness; do
-            echo "$song.mp3 + background → ${song}_video.mp4"
-            ffmpeg -y -stream_loop -1 -i jazz_bg.mp4 -i ${song}.mp3 \
-                   -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p \
-                   -c:a aac -b:a 128k -shortest \
-                   ${song}_video.mp4
-          done
-          ls -lh *_video.mp4
-
-      - name: 24/7 YouTube Live Infinite Loop
+      - name: Create & Stream 24/7 Jazz Loop
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "Starting infinite 24/7 jazz loop..."
-          echo "file 'tipperary_video.mp4'" > playlist.txt
-          echo "file 'dancing_video.mp4'" >> playlist.txt
-          echo "file 'twilight_video.mp4'" >> playlist.txt
-          echo "file 'happiness_video.mp4'" >> playlist.txt
-          
+          # Playlist: 4 songs loop
+          echo "file 'tipperary.mp3'" > playlist.txt
+          echo "file 'dancing.mp3'" >> playlist.txt
+          echo "file 'twilight.mp3'" >> playlist.txt
+          echo "file 'happiness.mp3'" >> playlist.txt
+
+          # Stream with animated jazz background
           ffmpeg -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-                 -c:v libx264 -preset ultrafast -b:v 2000k -maxrate 2000k \
-                 -pix_fmt yuv420p -r 25 \
+                 -vf "drawbox=y=0:h=720:w=1280:c=black@0.3, \
+                      drawbox=y=80:h=10:c=#FFD700@1, \
+                      drawtext=text='VINTAGE JAZZ 1920s':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=20, \
+                      drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=140, \
+                      drawtext=text='24/7 Live Stream | %{localtime\:%H:%M}':fontsize=30:fontcolor=#00d4ff:x=(w-text_w)/2:y=650" \
+                 -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 \
                  -c:a aac -b:a 128k \
                  -f flv "$RTMP_TARGET"
