@@ -16,22 +16,22 @@ jobs:
 
       - name: Download 7 Jazz Songs ✅
         run: |
-          wget -q -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
-          wget -q -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
-          wget -q -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
-          wget -q -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
-          wget -q -O cotton.mp3 "https://dn710700.ca.archive.org/0/items/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-cotton%20pickers%20got%20to%20cool%20my%20doggies%20now.mp3"
-          wget -q -O chicago.mp3 "https://dn710700.ca.archive.org/0/items/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-aileen%20stanley%20chicago.mp3"
-          wget -q -O robin.mp3 "https://dn710700.ca.archive.org/0/items/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-al%20jolson%20when%20the%20red%20red%20robin%20comes%20bob%20bob%20bobin%20along.mp3"
+          wget -q -O tipperary.mp3 "https://archive.org/download/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
+          wget -q -O dancing.mp3 "https://archive.org/download/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
+          wget -q -O twilight.mp3 "https://archive.org/download/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
+          wget -q -O happiness.mp3 "https://archive.org/download/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
+          wget -q -O cotton.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-cotton%20pickers%20got%20to%20cool%20my%20doggies%20now.mp3"
+          wget -q -O chicago.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-aileen%20stanley%20chicago.mp3"
+          wget -q -O robin.mp3 "https://archive.org/download/Roaring20sJazzIshamJonesOrchestraSomebodySWrong/Roaring%20%2720s%20Jazz%20-al%20jolson%20when%20the%20red%20red%20robin%20comes%20bob%20bob%20bobin%20along.mp3"
           echo "=== Songs ==="
           ls -lh *.mp3
 
       - name: Download 4 Backgrounds ✅
         run: |
-          wget -q -O bg1.mp4 "https://dn790001.ca.archive.org/0/items/098439/098439.mp4"
-          wget -q -O bg2.mp4 "https://dn711309.ca.archive.org/0/items/NewberryMMSWackerReel1080/Newberry_MMS_Wacker_Reel_002_1080.mp4"
-          wget -q -O bg3.mp4 "https://dn721804.ca.archive.org/0/items/fksBOca4gEEjgpco7TJJUUzEU71ncT/tmpsjj3tww8.mp4"
-          wget -q -O bg4.mp4 "https://dn720405.ca.archive.org/0/items/19201928publicdomainanimation/Metropolis_1927_KW.mp4"
+          wget -q -O bg1.mp4 "https://archive.org/download/098439/098439.mp4"
+          wget -q -O bg2.mp4 "https://archive.org/download/NewberryMMSWackerReel1080/Newberry_MMS_Wacker_Reel_002_1080.mp4"
+          wget -q -O bg3.mp4 "https://archive.org/download/fksBOca4gEEjgpco7TJJUUzEU71ncT/tmpsjj3tww8.mp4"
+          wget -q -O bg4.mp4 "https://archive.org/download/19201928publicdomainanimation/Metropolis_1927_KW.mp4"
           echo "=== Backgrounds ==="
           ls -lh *.mp4
 
@@ -53,13 +53,13 @@ jobs:
             echo "✅ Done: $output"
           }
 
-          make_video tipperary.mp3 bg1.mp4 "It's a Long Way to Tipperary"     v1.mp4
-          make_video dancing.mp3   bg2.mp4 "A Boy and a Girl Were Dancing"     v2.mp4
-          make_video twilight.mp3  bg3.mp4 "At Twilight"                       v3.mp4
-          make_video happiness.mp3 bg4.mp4 "All For You - Happiness"           v4.mp4
-          make_video cotton.mp3    bg1.mp4 "Cotton Pickers - Cool My Doggies"  v5.mp4
-          make_video chicago.mp3   bg2.mp4 "Aileen Stanley - Chicago"          v6.mp4
-          make_video robin.mp3     bg3.mp4 "Al Jolson - Red Red Robin"         v7.mp4
+          make_video tipperary.mp3 bg1.mp4 "It's a Long Way to Tipperary"    v1.mp4
+          make_video dancing.mp3   bg2.mp4 "A Boy and a Girl Were Dancing"    v2.mp4
+          make_video twilight.mp3  bg3.mp4 "At Twilight"                      v3.mp4
+          make_video happiness.mp3 bg4.mp4 "All For You - Happiness"          v4.mp4
+          make_video cotton.mp3    bg1.mp4 "Cotton Pickers - Cool My Doggies" v5.mp4
+          make_video chicago.mp3   bg2.mp4 "Aileen Stanley - Chicago"         v6.mp4
+          make_video robin.mp3     bg3.mp4 "Al Jolson - Red Red Robin"        v7.mp4
 
           echo "=== All Videos ==="
           ls -lh *.mp4
