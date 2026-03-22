@@ -1,1 +1,48 @@
+name: Seamless 4-Music Continuous Loop
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */6 * * *'
+
+jobs:
+  seamless_stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Tools
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg yt-dlp
+
+      - name: Download 4 Music Videos
+        run: |
+          # Music 1
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music1.mp4" "https://music.youtube.com/watch?v=IoO9pbEzJ7U"
+          # Music 2
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music2.mp4" "https://music.youtube.com/watch?v=KBdyzeA2Fl0"
+          # Music 3
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music3.mp4" "https://music.youtube.com/watch?v=YuhiLvoTBJY"
+          # Music 4
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music4.mp4" "https://music.youtube.com/watch?v=BV3NNQytg4g"
+
+      - name: Create Concat List
+        run: |
+          cat > list.txt << EOF
+          file 'music1.mp4'
+          file 'music2.mp4'  
+          file 'music3.mp4'
+          file 'music4.mp4'
+          EOF
+
+      - name: Merge Videos
+        run: |
+          ffmpeg -f concat -safe 0 -i list.txt -c copy seamless_4music.mp4
+          echo "4 Music Videos combined"
+
+      - name: Infinite Loop Stream
+        env:
+          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+        run: |
+          ffmpeg -stream_loop -1 -re -i seamless_4music.mp4 \
+            -vf "scale=1280:720,fps=25,drawbox=y=0:color=black@0.85:width=iw:height=80,drawtext=text='🎵 4 MUSIC LOOP 24/7':x=50:y=15:fontsize=36:fontcolor=#FFD700:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,drawtext=text='Music1+2+3+4 | %{localtime\:%H\:%M} LIVE!':x=w-tw-50:y=20:fontsize=28:fontcolor=white,drawbox=y=h-80:color=#8B0000@0.8:width=iw:height=80,drawtext=text='SUBSCRIBE FOR MORE MUSIC!':x=(w-text_w)/2:y=h-35:fontsize=32:fontcolor=#FFD700" \
+            -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3500k -bufsize 6000k -g 60 -keyint_min 60 -sc_threshold 0 -pix_fmt yuv420p \
+            -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
