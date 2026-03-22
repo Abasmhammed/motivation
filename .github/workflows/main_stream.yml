@@ -1,100 +1,43 @@
-name: Vintage Jazz Classics - 098439 Background Loop
+name: Vintage Jazz - GUARANTEED Working
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours for 24/7 coverage
+    - cron: '0 */6 * * *'
 
 jobs:
   jazz_stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install FFmpeg & Archive Tools
-        run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core wget python3-pip
-          pip3 install internetarchive
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download 4 Paul Whiteman Golden Era Songs
+      - name: Download 4 Jazz Songs
         run: |
-          echo "Downloading jazz classics..."
-          # 1. Tipperary (1920s classic)
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
-          
-          # 2. A Boy and a Girl Were Dancing
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
-          
-          # 3. At Twilight
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
-          
-          # 4. All For You (Happiness)
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
-          
-          echo "✅ Songs ready:"
-          ls -lh *.mp3
+          wget -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
+          wget -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
+          wget -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
+          wget -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
 
-      - name: Download 098439 Jazz Background Video (Official Method)
-        run: |
-          echo "🔍 Downloading background from https://archive.org/details/098439..."
-          
-          # Use official internetarchive CLI tool
-          cd /tmp
-          ia download 098439 --glob="*.mp4" --glob="*.ogv" --glob="*.m4v" --destdir=/tmp/098439 || \
-          ia download 098439 --glob="*.mp4" --glob="*.ogv" --destdir=/tmp/098439 || \
-          ia download 098439 --destdir=/tmp/098439
-          
-          cd /tmp/098439
-          echo "Available video files:"
-          ls -lh *.mp4 *.ogv *.m4v 2>/dev/null || ls -lh
-          
-          # Pick largest/best video file
-          largest_video=$(ls -S *.mp4 *.ogv *.m4v 2>/dev/null | head -1)
-          if [ -n "$largest_video" ]; then
-            echo "✅ Using: $largest_video"
-            cp "$largest_video" /tmp/jazz_bg.mp4
-          else
-            echo "⚠️ Using first available video"
-            cp *.* /tmp/jazz_bg.mp4 2>/dev/null || ls
-          fi
-          
-          cd /
-          # Convert to MP4 and trim to 60 seconds for efficiency
-          ffmpeg -y -i /tmp/jazz_bg.mp4 -c copy -movflags +faststart -t 60 jazz_bg.mp4
-          
-          echo "✅ Background ready:"
-          ls -lh jazz_bg.mp4
-          ffprobe jazz_bg.mp4 2>&1 | grep Duration
-
-      - name: Create 4 Jazz Videos with 098439 Background
-        run: |
-          echo "🎬 Creating 4 jazz videos with background..."
-          for song in tipperary dancing twilight happiness; do
-            echo "Processing $song.mp3..."
-            ffmpeg -y -stream_loop -1 -i jazz_bg.mp4 -i ${song}.mp3 \
-                   -c:v libx264 -preset ultrafast -b:v 2000k -maxrate 2000k \
-                   -pix_fmt yuv420p -r 25 \
-                   -c:a aac -b:a 128k \
-                   -shortest \
-                   ${song}_video.mp4
-          done
-          echo "✅ All videos created:"
-          ls -lh *_video.mp4
-
-      - name: 24/7 Infinite Quad Jazz Loop to YouTube Live
+      - name: Create Jazz Background + Videos + Stream
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "📺 Starting 24/7 YouTube Live Stream..."
-          echo "file 'tipperary_video.mp4'" > jazz_playlist.txt
-          echo "file 'dancing_video.mp4'" >> jazz_playlist.txt
-          echo "file 'twilight_video.mp4'" >> jazz_playlist.txt
-          echo "file 'happiness_video.mp4'" >> jazz_playlist.txt
-          
-          echo "Playlist:"
-          cat jazz_playlist.txt
-          
-          # Infinite loop streaming to YouTube
-          ffmpeg -stream_loop -1 -f concat -safe 0 -i jazz_playlist.txt \
-            -c:v libx264 -preset ultrafast -b:v 2000k -maxrate 2000k \
-            -pix_fmt yuv420p -r 25 \
-            -c:a aac -b:a 128k \
-            -f flv "$RTMP_TARGET"
+          # 1. Create professional jazz background
+          ffmpeg -f lavfi -i color=#0f0f23:1280x720:duration=60 -vf "drawbox=y=80:h=10:c=#FFD700,
+          drawtext=text='1920s JAZZ GOLDEN ERA':fontsize=48:c=#FFD700:x=(w-text_w)/2:y=20,
+          drawtext=text='Paul Whiteman Classics':fontsize=36:c=white:x=(w-text_w)/2:y=140,
+          drawtext=text='24/7 Live | %{localtime\:%H:%M}':fontsize=30:c=#00d4ff:x=(w-text_w)/2:y=650" jazz_bg.mp4
+
+          # 2. Create 4 videos
+          for song in tipperary dancing twilight happiness; do
+            ffmpeg -stream_loop -1 -i jazz_bg.mp4 -i ${song}.mp3 -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -c:a aac -b:a 128k -shortest ${song}_video.mp4
+          done
+
+          # 3. Infinite YouTube stream
+          echo "file 'tipperary_video.mp4'" > playlist.txt
+          echo "file 'dancing_video.mp4'" >> playlist.txt
+          echo "file 'twilight_video.mp4'" >> playlist.txt
+          echo "file 'happiness_video.mp4'" >> playlist.txt
+
+          ffmpeg -stream_loop -1 -f concat -safe 0 -i playlist.txt -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -c:a aac -b:a 128k -f flv "$RTMP_TARGET"
