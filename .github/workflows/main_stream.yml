@@ -1,71 +1,40 @@
-name: ✅ CLEAN LoFi Stream - Working + Colorful Motivation
+name: LoFi Stream - Subscribe + Like Only
 on:
   workflow_dispatch:
   schedule:
     - cron: '*/20 * * * *'
 
 jobs:
-  clean_lofi:
+  lofi_stream:
     runs-on: ubuntu-latest
     steps:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download Video
+      - name: Download LoFi Video
         run: |
           wget -O lofi.mp4 "https://dn721605.ca.archive.org/0/items/snow-silence-winter-lo-fi-chillout-beats-2022/%E2%9D%86%20Snow%20Silence%20%E2%9D%86%20%20Winter%20Lo-fi%20%20Chillout%20%20Beats%20Music%20Mix.mp4"
-          echo "✅ Video ready"
+          echo "Video downloaded successfully"
 
-      - name: Start Clean Professional Stream
+      - name: Start 24/7 Stream
         env:
-          KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
           ffmpeg -stream_loop -1 -re -i lofi.mp4 \
             -vf "
-              # Simple scaling
-              scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v0];
+              scale=1280:720,
+              drawbox=y=0:color=#1976D2@0.95:h=60,
+              drawtext=text='WINTER LOFI 24/7':x=50:y=15:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='%{localtime\:%H:%M} LIVE':x=w-tw-50:y=17:fontsize=24:fontcolor=#BBDEFB,
               
-              # TOP BAR - Blue gradient
-              [v0]drawbox=y=0:color=#1976D2@0.95:width=iw:height=70[top],
-              drawtext=text='❄️ WINTER LOFI MOTIVATION 24/7 ❄️':x=50:y=20:fontsize=34:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='%{localtime\:%H:%M:%S} LIVE':x=w-tw-60:y=22:fontsize=26:fontcolor=#BBDEFB[topbar];
-              
-              # SUBSCRIBE BAR - Gold
-              [topbar]drawbox=y=h-100:color=#FBC02D@0.92:width=iw:height=100[subbar],
-              drawtext=text='🔔 SUBSCRIBE | 👍 LIKE | 💬 COMMENT':x=(w-text_w)/2:y=h-75:fontsize=30:fontcolor=#1B5E20:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='MOTIVATIONAL QUOTES EVERY 30 SECONDS':x=(w-text_w)/2:y=h-45:fontsize=22:fontcolor=#E65100[cta];
-              
-              # MOTIVATIONAL QUOTES - 6 colors rotating every 30s
-              [cta]drawbox=x=50:y=h-280:w=1180:h=160:color=#E91E63@0.93:r=15[quotes],
-              
-              # Quote 1 - Rose (0-30s)
-              drawtext=text='SUCCESS = Small efforts REPEATED daily':enable='lt(mod(t,180),30)':x=80:y=h-250:fontsize=26:fontcolor=#F8BBD9:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='- Robert Collier':enable='lt(mod(t,180),30)':x=80:y=h-225:fontsize=20:fontcolor=#F48FB1,
-              
-              # Quote 2 - Blue (30-60s)
-              drawtext=text='FOCUS on productive, not busy':enable='between(t,30,60)':x=80:y=h-250:fontsize=26:fontcolor=#42A5F5:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='- Tim Ferriss':enable='between(t,30,60)':x=80:y=h-225:fontsize=20:fontcolor=#BBDEFB,
-              
-              # Quote 3 - Gold (60-90s)
-              drawtext=text='HARD WORK > Talent (without work)':enable='between(t,60,90)':x=80:y=h-250:fontsize=26:fontcolor=#FFCA28:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='- Tim Notke':enable='between(t,60,90)':x=80:y=h-225:fontsize=20:fontcolor=#FFF176,
-              
-              # Quote 4 - Green (90-120s)
-              drawtext=text='Laser FOCUS = Success Secret':enable='between(t,90,120)':x=80:y=h-250:fontsize=26:fontcolor=#689F38:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='- Bruce Lee':enable='between(t,90,120)':x=80:y=h-225:fontsize=20:fontcolor=#C5E1A5,
-              
-              # Quote 5 - Purple (120-150s)
-              drawtext=text='ACTION > Perfect Planning':enable='between(t,120,150)':x=80:y=h-250:fontsize=26:fontcolor=#8E24AA:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='- Pablo Picasso':enable='between(t,120,150)':x=80:y=h-225:fontsize=20:fontcolor=#E1BEE7,
-              
-              # Quote 6 - Orange (150-180s)
-              drawtext=text='TODAY shapes your TOMORROWS':enable='between(t,150,180)':x=80:y=h-250:fontsize=26:fontcolor=#EF6C00:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='- Ralph Marston':enable='between(t,150,180)':x=80:y=h-225:fontsize=20:fontcolor=#FFCCBC[output]
+              drawbox=y=h-80:color=#FBC02D@0.9:h=80,
+              drawtext=text='🔔 SUBSCRIBE':x=50:y=h-55:fontsize=36:fontcolor=#1B5E20:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+              drawtext=text='👍 LIKE':x=w/2-100:y=h-55:fontsize=36:fontcolor=#1B5E20:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
             " \
-            -c:v libx264 -preset ultrafast -tune zerolatency \
-            -b:v 3000k -maxrate 3500k -bufsize 6000k -r 30 -g 60 \
-            -pix_fmt yuv420p -c:a copy \
-            -f flv "rtmp://a.rtmp.youtube.com/live2/$KEY"
+            -c:v libx264 -preset fast -b:v 2500k -r 30 \
+            -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
 
-      - name: Status
-        run: echo "✅ CLEAN LOFI STREAM LIVE - No errors!"
+      - name: Stream Status
+        run: |
+          echo "✅ LoFi 24/7 Stream is LIVE!"
+          echo "📺 Check YouTube Live Control Room"
