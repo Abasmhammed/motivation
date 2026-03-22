@@ -23,12 +23,9 @@ jobs:
           echo "=== Songs ==="
           ls -lh *.mp3
 
-      - name: Download Background Video (Verified Archive.org Link)
+      - name: Download Background Video
         run: |
-          # فيديو جاز قديم مجاني 100% من Archive.org - رابط مباشر مضمون
-          wget -q -O jazz_bg.mp4 "https://archive.org/download/silent_film_backgrounds/city_lights_bg.mp4" || \
-          wget -q -O jazz_bg.mp4 "https://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4"
-
+          wget -q -O jazz_bg.mp4 "https://dn790001.ca.archive.org/0/items/098439/098439.mp4"
           echo "=== Background Video ==="
           ls -lh jazz_bg.mp4
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 jazz_bg.mp4
