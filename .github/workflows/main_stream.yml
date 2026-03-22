@@ -1,4 +1,5 @@
 name: Global Cinema 24-7 Local Engine
+
 on:
   workflow_dispatch:
   schedule:
@@ -11,32 +12,28 @@ jobs:
       - name: Install Pro Media Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
+          sudo apt-get install -y ffmpeg fonts-dejavu-core wget
 
-      - name: Pre-Download Hockey Game (Bypass 503)
+      - name: Pre-Download Hockey Game
         run: |
-          # Using multiple retries and User-Agent to ensure stable download from Archive.org
-          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36" \
                --tries=5 --waitretry=10 \
-               -O hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4" || \
-          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4"
-          
-          # Integrity check: Ensure file exists and is larger than 5MB
-          if [ ! -f hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 5000000 ]; then
-            echo "Error: Download failed or file corrupted"
-            exit 1
-          fi
-          echo "Success: Hockey Video Downloaded Successfully"
+               -O hockey.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
+          ls -lh hockey.mp4
 
-      - name: Launch 24/7 Professional Hockey Stream
+      - name: Start 24-7 Hockey Stream
         env:
-          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+          RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
           ffmpeg -stream_loop -1 -re -i hockey.mp4 \
-          -vf "scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=75, \
-          drawtext=text='🏒 CANADIAN HOCKEY CLASSICS 24/7':x=40:y=20:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
-          drawtext=text='%{localtime\:%H\\:%M\\:%S} LIVE':x=w-tw-50:y=25:fontsize=24:fontcolor=yellow, \
-          drawbox=y=h-80:color=black@0.8:width=iw:height=80, \
-          drawtext=text='🔔 SUBSCRIBE FOR MORE CLASSIC GAMES':x=(w-text_w)/2:y=h-45:fontsize=28:fontcolor=gold" \
-          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3500k -bufsize 6000k -g 60 -pix_fmt yuv420p \
-          -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+            -vf "scale=1280:720,fps=25,\
+                 drawbox=y=0:color=black@0.8:width=iw:height=80,\
+                 drawtext=text='WHS ALUMNI HOCKEY GAME 1994':x=50:y=20:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
+                 drawtext=text='%{localtime\:%Y-%m-%d %H\\:%M} LIVE':x=w-tw-50:y=20:fontsize=26:fontcolor=yellow:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,\
+                 drawbox=y=h-80:color=blue@0.7:width=iw:height=70,\
+                 drawtext=text='SUBSCRIBE FOR MORE HOCKEY 🎉':x=(w-tw)/2:y=h-th-20:fontsize=30:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" \
+            -map 0:v -map 0:a \
+            -c:v libx264 -preset veryfast -b:v 2500k -maxrate 2500k -bufsize 5000k \
+            -pix_fmt yuv420p -r 25 -g 50 -keyint_min 50 -sc_threshold 0 \
+            -c:a aac -b:a 128k -ar 44100 \
+            -f flv "$RTMP_TARGET"
