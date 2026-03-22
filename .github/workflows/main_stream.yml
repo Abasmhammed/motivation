@@ -1,63 +1,50 @@
-name: YouTube Music Loop - 4 Videos Continuous Play
+name: Seamless 4-Music Continuous Loop (Your Original Fixed)
+
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'  # Restart every 4 hours
+    - cron: '0 */6 * * *'
 
 jobs:
-  music_loop:
+  seamless_stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install FFmpeg
+      - name: Install Tools
         run: sudo apt-get update && sudo apt-get install -y ffmpeg yt-dlp
 
-      - name: Download All 4 Music Videos
+      - name: Download 4 NEW Music Videos (YOUR LINKS)
         run: |
-          # Video 1
-          yt-dlp -f 'best[height<=720]' --no-playlist -o "video1.mp4" "https://music.youtube.com/watch?v=IoO9pbEzJ7U"
+          # تحميل الـ 4 أغاني الجديدة
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music1.mp4" "https://music.youtube.com/watch?v=IoO9pbEzJ7U"
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music2.mp4" "https://music.youtube.com/watch?v=KBdyzeA2Fl0"
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music3.mp4" "https://music.youtube.com/watch?v=YuhiLvoTBJY"
+          yt-dlp -f 'best[height<=720]' --no-playlist -o "music4.mp4" "https://music.youtube.com/watch?v=BV3NNQytg4g"
           
-          # Video 2  
-          yt-dlp -f 'best[height<=720]' --no-playlist -o "video2.mp4" "https://music.youtube.com/watch?v=KBdyzeA2Fl0"
-          
-          # Video 3
-          yt-dlp -f 'best[height<=720]' --no-playlist -o "video3.mp4" "https://music.youtube.com/watch?v=YuhiLvoTBJY"
-          
-          # Video 4
-          yt-dlp -f 'best[height<=720]' --no-playlist -o "video4.mp4" "https://music.youtube.com/watch?v=BV3NNQytg4g"
-          
-          echo "✅ All 4 videos downloaded:"
-          ls -lh video*.mp4
-
-      - name: Create Concatenation List
+      - name: Create Concat List
         run: |
-          cat > playlist.txt << EOF
-          file 'video1.mp4'
-          file 'video2.mp4'
-          file 'video3.mp4'
-          file 'video4.mp4'
+          cat > list.txt << EOF
+          file 'music1.mp4'
+          file 'music2.mp4'  
+          file 'music3.mp4'
+          file 'music4.mp4'
           EOF
-          echo "✅ Playlist ready (4 videos loop)"
-
-      - name: Merge Videos Into Single File
+          
+      - name: Merge Videos
         run: |
-          ffmpeg -f concat -safe 0 -i playlist.txt -c copy all_videos.mp4 -y
-          echo "✅ Combined video: $(du -h all_videos.mp4)"
-
-      - name: Infinite 24/7 Loop Stream
+          ffmpeg -f concat -safe 0 -i list.txt -c copy seamless_4music.mp4
+          echo "✅ 4 Music Videos combined: $(du -h seamless_4music.mp4)"
+          
+      - name: 24/7 Infinite Loop Stream
         env:
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          ffmpeg -stream_loop -1 -re -i all_videos.mp4 \
-            -vf "
-              scale=1280:720,
-              drawbox=y=0:color=#1976D2@0.95:h=60,
-              drawtext=text='YOUTUBE MUSIC 24/7 LOOP':x=50:y=15:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='%{localtime\:%H:%M} LIVE - 4 Videos Repeat':x=w-tw-60:y=17:fontsize=24:fontcolor=#BBDEFB,
-              
-              drawbox=y=h-80:color=#FBC02D@0.9:h=80,
-              drawtext=text='🔔 SUBSCRIBE':x=50:y=h-55:fontsize=36:fontcolor=#1B5E20,
-              drawtext=text='👍 LIKE':x=w/2-100:y=h-55:fontsize=36:fontcolor=#1B5E20
-            " \
-            -c:v libx264 -preset fast -b:v 2500k -r 30 \
-            -c:a aac -b:a 128k \
-            -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+          ffmpeg -stream_loop -1 -re -i seamless_4music.mp4 \
+          -vf "scale=1280:720,fps=25,
+               drawbox=y=0:color=black@0.85:width=iw:height=80,
+               drawtext=text='🎵 YOUTUBE MUSIC 24/7 LOOP':x=50:y=15:fontsize=36:fontcolor=#FFD700,
+               drawtext=text='4 Songs Loop | %{localtime\:%H\:%M} LIVE':x=w-tw-50:y=20:fontsize=28:fontcolor=white,
+               drawbox=y=h-80:color=#8B0000@0.8:width=iw:height=80,
+               drawtext=text='🔔 SUBSCRIBE NOW!':x=(w-text_w)/2:y=h-35:fontsize=32:fontcolor=#FFD700" \
+          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3500k -bufsize 6000k -g 60 \
+          -c:a aac -b:a 128k -ar 44100 \
+          -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
