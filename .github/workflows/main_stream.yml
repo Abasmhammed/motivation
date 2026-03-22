@@ -1,27 +1,42 @@
-name: Guaranteed Working Music Loop
-
+name: Global Cinema 24-7 Local Engine
 on:
   workflow_dispatch:
   schedule:
     - cron: '0 */6 * * *'
 
 jobs:
-  stream:
+  movie_streaming:
     runs-on: ubuntu-latest
     steps:
-      - uses: docker://linuxserver/ffmpeg:5.1-cli
-      - name: Download & Stream
-        env:
-          RTMP: ${{ secrets.YOUTUBE_STREAM_KEY }}
+      - name: Install Pro Media Tools
         run: |
-          # ONE PROVEN WORKING LINK ONLY
-          ffmpeg -stream_loop -1 \
-            -i "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4" \
-            -vf "scale=1280:720,
-                 drawbox=y=0:color=black@0.85:h=80,
-                 drawtext=text='HOCKEY 24/7':x=50:y=15:fontsize=36:fontcolor=yellow,
-                 drawtext=text='%{localtime\:%H:%M} LIVE':x=w-tw-50:y=20:fontsize=28:fontcolor=white,
-                 drawbox=y=h-80:color=red@0.8:h=80,
-                 drawtext=text='SUBSCRIBE':x=(w-text_w)/2:y=h-35:fontsize=32:fontcolor=yellow" \
-            -c:v libx264 -preset veryfast -b:v 2500k \
-            -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$RTMP"
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg fonts-dejavu-core wget unzip
+
+      - name: Pre-Download Hockey Game (Bypass 503)
+        run: |
+          # Using multiple retries and User-Agent to ensure stable download from Archive.org
+          wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
+               --tries=5 --waitretry=10 \
+               -O hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4" || \
+          curl -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -o hockey.mp4 "https://archive.org/download/OldHockeyDVDs/OldHockeyDVD1.mp4"
+          
+          # Integrity check: Ensure file exists and is larger than 5MB
+          if [ ! -f hockey.mp4 ] || [ $(stat -c%s hockey.mp4) -lt 5000000 ]; then
+            echo "Error: Download failed or file corrupted"
+            exit 1
+          fi
+          echo "Success: Hockey Video Downloaded Successfully"
+
+      - name: Launch 24/7 Professional Hockey Stream
+        env:
+          STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
+        run: |
+          ffmpeg -stream_loop -1 -re -i hockey.mp4 \
+          -vf "scale=1280:720,drawbox=y=0:color=black@0.8:width=iw:height=75, \
+          drawtext=text='🏒 CANADIAN HOCKEY CLASSICS 24/7':x=40:y=20:fontsize=32:fontcolor=white:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf, \
+          drawtext=text='%{localtime\:%H\\:%M\\:%S} LIVE':x=w-tw-50:y=25:fontsize=24:fontcolor=yellow, \
+          drawbox=y=h-80:color=black@0.8:width=iw:height=80, \
+          drawtext=text='🔔 SUBSCRIBE FOR MORE CLASSIC GAMES':x=(w-text_w)/2:y=h-45:fontsize=28:fontcolor=gold" \
+          -c:v libx264 -preset veryfast -b:v 3000k -maxrate 3500k -bufsize 6000k -g 60 -pix_fmt yuv420p \
+          -c:a aac -b:a 128k -ar 44100 -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
