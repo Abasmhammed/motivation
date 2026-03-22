@@ -1,4 +1,4 @@
-name: Working Hockey Loop Only
+name: Guaranteed Working Music Loop
 
 on:
   workflow_dispatch:
@@ -6,34 +6,22 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  hockey_stream:
+  stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
-
-      - name: Download PROVEN Hockey Links Only
-        run: |
-          # Hockey 1 - YOUR ORIGINAL WORKING
-          wget -O h1.mp4 "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4"
-          
-          # Hockey 2 - NYR vs TOR (proven)
-          wget -O h2.mp4 "https://archive.org/download/1962-stanley-cup-finals-g-6_202308/NYR%20vs%20TOR.ia.mp4"
-          
-          # Hockey 3 - Stanley Cup (proven)
-          wget -O h3.mp4 "https://archive.org/download/1962-stanley-cup-finals-g-6_202308/1962%20Stanley%20Cup%20Finals%20G6.mp4"
-
-      - name: Create List
-        run: |
-          cat > list.txt << EOF
-          file 'h1.mp4'
-          file 'h2.mp4'
-          file 'h3.mp4'
-          EOF
-
-      - name: Merge
-        run: ffmpeg -f concat -safe 0 -i list.txt -c copy hockey_loop.mp4
-
-      - name: Stream
+      - uses: docker://linuxserver/ffmpeg:5.1-cli
+      - name: Download & Stream
         env:
-          STREAM_KEY: ${{
+          RTMP: ${{ secrets.YOUTUBE_STREAM_KEY }}
+        run: |
+          # ONE PROVEN WORKING LINK ONLY
+          ffmpeg -stream_loop -1 \
+            -i "https://archive.org/download/d51753dc-f54b-4964-a32a-5aee2a693d68/WHS%20Alumni%20Hockey%20Game%201%201994.mp4" \
+            -vf "scale=1280:720,
+                 drawbox=y=0:color=black@0.85:h=80,
+                 drawtext=text='HOCKEY 24/7':x=50:y=15:fontsize=36:fontcolor=yellow,
+                 drawtext=text='%{localtime\:%H:%M} LIVE':x=w-tw-50:y=20:fontsize=28:fontcolor=white,
+                 drawbox=y=h-80:color=red@0.8:h=80,
+                 drawtext=text='SUBSCRIBE':x=(w-text_w)/2:y=h-35:fontsize=32:fontcolor=yellow" \
+            -c:v libx264 -preset veryfast -b:v 2500k \
+            -c:a copy -f flv "rtmp://a.rtmp.youtube.com/live2/$RTMP"
