@@ -3,18 +3,20 @@ name: Vintage Jazz Classics - 098439 Background Loop
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'
+    - cron: '0 */6 * * *'  # Every 6 hours for 24/7 coverage
 
 jobs:
   jazz_stream:
     runs-on: ubuntu-latest
     steps:
-      - name: Install FFmpeg & Dependencies
+      - name: Install FFmpeg & Archive Tools
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core wget
+          sudo apt-get update && sudo apt-get install -y ffmpeg fonts-dejavu-core wget python3-pip
+          pip3 install internetarchive
 
       - name: Download 4 Paul Whiteman Golden Era Songs
         run: |
+          echo "Downloading jazz classics..."
           # 1. Tipperary (1920s classic)
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
           
@@ -27,42 +29,44 @@ jobs:
           # 4. All For You (Happiness)
           wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
           
+          echo "✅ Songs ready:"
           ls -lh *.mp3
 
-      - name: Download 098439 Jazz Background Video (Smart Auto-Detect)
+      - name: Download 098439 Jazz Background Video (Official Method)
         run: |
+          echo "🔍 Downloading background from https://archive.org/details/098439..."
+          
+          # Use official internetarchive CLI tool
           cd /tmp
-          echo "🔍 Scanning 098439 for best video file..."
+          ia download 098439 --glob="*.mp4" --glob="*.ogv" --glob="*.m4v" --destdir=/tmp/098439 || \
+          ia download 098439 --glob="*.mp4" --glob="*.ogv" --destdir=/tmp/098439 || \
+          ia download 098439 --destdir=/tmp/098439
           
-          # Get files list and pick first video
-          wget -qO- "https://archive.org/download/098439/098439_files.xml" 2>/dev/null | \
-            grep -oP 'name="\K[^"]*\.(mp4|ogv|m4v|avi|mov)' | head -1 > best_video.txt
+          cd /tmp/098439
+          echo "Available video files:"
+          ls -lh *.mp4 *.ogv *.m4v 2>/dev/null || ls -lh
           
-          if [ -s best_video.txt ]; then
-            VIDEO_FILE=$(cat best_video.txt)
-            echo "✅ Downloading: $VIDEO_FILE"
-            wget --user-agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" --tries=5 -O jazz_bg.mp4 \
-              "https://archive.org/download/098439/$VIDEO_FILE"
+          # Pick largest/best video file
+          largest_video=$(ls -S *.mp4 *.ogv *.m4v 2>/dev/null | head -1)
+          if [ -n "$largest_video" ]; then
+            echo "✅ Using: $largest_video"
+            cp "$largest_video" /tmp/jazz_bg.mp4
           else
-            echo "⚠️  Using fallback: largest MP4/OGV"
-            # Fallback: try common video files
-            for ext in mp4 ogv m4v avi; do
-              wget --user-agent="Mozilla/5.0" --tries=3 -O jazz_bg.mp4 "https://archive.org/download/098439/098439.$ext" && break
-            done
+            echo "⚠️ Using first available video"
+            cp *.* /tmp/jazz_bg.mp4 2>/dev/null || ls
           fi
           
-          # Convert to MP4 + trim to 60s for efficiency
-          ffmpeg -y -i jazz_bg.mp4 -c copy -movflags +faststart -t 60 jazz_bg_final.mp4
-          mv jazz_bg_final.mp4 ../jazz_bg.mp4
+          cd /
+          # Convert to MP4 and trim to 60 seconds for efficiency
+          ffmpeg -y -i /tmp/jazz_bg.mp4 -c copy -movflags +faststart -t 60 jazz_bg.mp4
           
-          cd ..
           echo "✅ Background ready:"
           ls -lh jazz_bg.mp4
-          ffprobe jazz_bg.mp4 2>&1 | grep "Duration"
+          ffprobe jazz_bg.mp4 2>&1 | grep Duration
 
       - name: Create 4 Jazz Videos with 098439 Background
         run: |
-          echo "🎬 Creating 4 jazz videos..."
+          echo "🎬 Creating 4 jazz videos with background..."
           for song in tipperary dancing twilight happiness; do
             echo "Processing $song.mp3..."
             ffmpeg -y -stream_loop -1 -i jazz_bg.mp4 -i ${song}.mp3 \
@@ -75,17 +79,20 @@ jobs:
           echo "✅ All videos created:"
           ls -lh *_video.mp4
 
-      - name: 24/7 Infinite Quad Jazz Loop → YouTube Live
+      - name: 24/7 Infinite Quad Jazz Loop to YouTube Live
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "📺 Creating playlist & streaming..."
+          echo "📺 Starting 24/7 YouTube Live Stream..."
           echo "file 'tipperary_video.mp4'" > jazz_playlist.txt
           echo "file 'dancing_video.mp4'" >> jazz_playlist.txt
           echo "file 'twilight_video.mp4'" >> jazz_playlist.txt
           echo "file 'happiness_video.mp4'" >> jazz_playlist.txt
-
-          # Infinite loop stream to YouTube
+          
+          echo "Playlist:"
+          cat jazz_playlist.txt
+          
+          # Infinite loop streaming to YouTube
           ffmpeg -stream_loop -1 -f concat -safe 0 -i jazz_playlist.txt \
             -c:v libx264 -preset ultrafast -b:v 2000k -maxrate 2000k \
             -pix_fmt yuv420p -r 25 \
