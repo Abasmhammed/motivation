@@ -1,9 +1,9 @@
-name: Prelinger Vintage 24/7 - 7 Videos (English)
+name: YouTube 24/7 Vintage Stream (Simple)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */6 * * *'  # Runs every 6 hours
+    - cron: '0 */6 * * *'
 
 jobs:
   vintage_stream:
@@ -16,72 +16,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg wget
 
-      - name: Download 7 Vintage Videos
+      - name: Download 1 Test Video (Small & Fast)
         run: |
-          echo "Downloading 7 vintage videos from Archive.org..."
+          wget --timeout=30 --tries=3 -q -O "test.mp4" "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
+          ls -lh test.mp4
 
-          # Video 1
-          wget --timeout=30 --tries=3 -q -O "video1.mp4" "https://dn790002.ca.archive.org/0/items/Technico1949/Technico1949.mp4"
-
-          # Video 2
-          wget --timeout=30 --tries=3 -q -O "video2.mp4" "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
-
-          # Video 3
-          wget --timeout=30 --tries=3 -q -O "video3.mp4" "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4"
-
-          # Video 4
-          wget --timeout=30 --tries=3 -q -O "video4.mp4" "https://archive.org/download/1938TheTinNoseShop/1938TheTinNoseShop_512kb.mp4"
-
-          # Video 5
-          wget --timeout=30 --tries=3 -q -O "video5.mp4" "https://archive.org/download/ThatTinNoseShop1938/ThatTinNoseShop1938_512kb.mp4"
-
-          # Video 6
-          wget --timeout=30 --tries=3 -q -O "video6.mp4" "https://archive.org/download/1940sShortFilm/1940sShortFilm_512kb.mp4"
-
-          # Video 7
-          wget --timeout=30 --tries=3 -q -O "video7.mp4" "https://archive.org/download/1940sPublicService/1940sPublicService_512kb.mp4"
-
-          ls -lh video*.mp4
-
-      - name: Create Playlist with 7 Videos
-        run: |
-          cat > playlist.txt << 'EOF'
-file 'video1.mp4'
-file 'video2.mp4'
-file 'video3.mp4'
-file 'video4.mp4'
-file 'video5.mp4'
-file 'video6.mp4'
-file 'video7.mp4'
-EOF
-
-          echo "✅ Playlist:"
-          cat playlist.txt
-
-      - name: Test FFmpeg (10 seconds)
-        run: |
-          ffmpeg -y -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,
-                 drawtext=text='PRELINGER VINTAGE':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=30,
-                 drawtext=text='Colorized Classics':fontsize=34:fontcolor=white:x=(w-text_w)/2:y=90,
-                 drawtext=text='24/7 Live Stream':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650,
-                 drawtext=text='%{localtime\:%H:%M}':fontsize=24:fontcolor=#aaffaa:x=20:y=680" \
-            -c:v libx264 -preset ultrafast -b:v 1500k -pix_fmt yuv420p \
-            -c:a aac -b:a 96k \
-            -t 10 -f null - && echo "✅ TEST PASSED - READY TO STREAM!" || echo "❌ TEST FAILED"
-
-      - name: 🔴 Stream 24/7 to YouTube
+      - name: 🔴 Stream 1 Video to YouTube
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "🎬 Starting 24/7 Vintage Loop (7 Videos)..."
-          ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
+          echo "🎬 Starting livestream..."
+          ffmpeg -re -stream_loop -1 -i "test.mp4" \
             -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,
                  drawtext=text='PRELINGER VINTAGE':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=30,
                  drawtext=text='Colorized 1900s-1940s':fontsize=34:fontcolor=white:x=(w-text_w)/2:y=90,
                  drawtext=text='24/7 Non-Stop':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650,
                  drawtext=text='%{localtime\:%H:%M:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680" \
-            -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -maxrate 1500k -bufsize 3000k \
+            -c:v libx264 -preset ultrafast -tune zerolatency \
+            -b:v 1500k -maxrate 1500k -bufsize 3000k \
             -pix_fmt yuv420p -r 25 \
             -c:a aac -b:a 96k \
             -f flv "$RTMP_TARGET"
