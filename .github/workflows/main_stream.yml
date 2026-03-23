@@ -1,4 +1,4 @@
-name: YouTube 24/7 Vintage Stream (Simple)
+name: YouTube 24/7 Vintage Stream (FIXED - No Text)
 
 on:
   workflow_dispatch:
@@ -16,22 +16,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg wget
 
-      - name: Download 1 Test Video (Small & Fast)
+      - name: Download 1 Test Video (Working)
         run: |
-          wget --timeout=30 --tries=3 -q -O "test.mp4" "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
+          wget --timeout=30 --tries=3 -q -O "test.mp4" "https://archive.org/download/Technico1949/Technico1949_512kb.mp4"
           ls -lh test.mp4
 
-      - name: 🔴 Stream 1 Video to YouTube
+      - name: 🔴 Stream to YouTube (No Text Overlay)
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
           echo "🎬 Starting livestream..."
           ffmpeg -re -stream_loop -1 -i "test.mp4" \
-            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,
-                 drawtext=text='PRELINGER VINTAGE':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=30,
-                 drawtext=text='Colorized 1900s-1940s':fontsize=34:fontcolor=white:x=(w-text_w)/2:y=90,
-                 drawtext=text='24/7 Non-Stop':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650,
-                 drawtext=text='%{localtime\:%H:%M:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680" \
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
             -c:v libx264 -preset ultrafast -tune zerolatency \
             -b:v 1500k -maxrate 1500k -bufsize 3000k \
             -pix_fmt yuv420p -r 25 \
