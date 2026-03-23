@@ -1,4 +1,4 @@
-name: YouTube 24/7 Vintage Stream (FIXED - No Text)
+name: YouTube 24/7 Vintage Stream (7 Videos - FIXED)
 
 on:
   workflow_dispatch:
@@ -16,17 +16,55 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg wget
 
-      - name: Download 1 Test Video (Working)
+      - name: Download 7 Vintage Videos
         run: |
-          wget --timeout=30 --tries=3 -q -O "test.mp4" "https://archive.org/download/Technico1949/Technico1949_512kb.mp4"
-          ls -lh test.mp4
+          echo "Downloading 7 vintage videos..."
 
-      - name: 🔴 Stream to YouTube (No Text Overlay)
+          # Video 1 - Technicolor 1949
+          wget --timeout=30 --tries=3 -q -O "video1.mp4" "https://archive.org/download/Technico1949/Technico1949_512kb.mp4"
+
+          # Video 2 - Public Domain Movie
+          wget --timeout=30 --tries=3 -q -O "video2.mp4" "https://archive.org/download/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
+
+          # Video 3 - MakeMine 1948
+          wget --timeout=30 --tries=3 -q -O "video3.mp4" "https://archive.org/download/MakeMine1948/MakeMine1948_512kb.mp4"
+
+          # Video 4 - Tin Nose Shop 1938
+          wget --timeout=30 --tries=3 -q -O "video4.mp4" "https://archive.org/download/1938TheTinNoseShop/1938TheTinNoseShop_512kb.mp4"
+
+          # Video 5 - That Tin Nose Shop
+          wget --timeout=30 --tries=3 -q -O "video5.mp4" "https://archive.org/download/ThatTinNoseShop1938/ThatTinNoseShop1938_512kb.mp4"
+
+          # Video 6 - 1940s Short Film
+          wget --timeout=30 --tries=3 -q -O "video6.mp4" "https://archive.org/download/1940sShortFilm/1940sShortFilm_512kb.mp4"
+
+          # Video 7 - 1940s Public Service
+          wget --timeout=30 --tries=3 -q -O "video7.mp4" "https://archive.org/download/1940sPublicService/1940sPublicService_512kb.mp4"
+
+          echo "✅ All videos downloaded:"
+          ls -lh video*.mp4
+
+      - name: Create Playlist (7 Videos Loop)
+        run: |
+          cat > playlist.txt << 'EOF'
+file 'video1.mp4'
+file 'video2.mp4'
+file 'video3.mp4'
+file 'video4.mp4'
+file 'video5.mp4'
+file 'video6.mp4'
+file 'video7.mp4'
+EOF
+
+          echo "✅ Playlist ready:"
+          cat playlist.txt
+
+      - name: 🔴 Stream 24/7 to YouTube (7 Videos)
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "🎬 Starting livestream..."
-          ffmpeg -re -stream_loop -1 -i "test.mp4" \
+          echo "🎬 Starting 24/7 Vintage Loop (7 Videos)..."
+          ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
             -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
             -c:v libx264 -preset ultrafast -tune zerolatency \
             -b:v 1500k -maxrate 1500k -bufsize 3000k \
