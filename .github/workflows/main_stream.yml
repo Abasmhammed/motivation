@@ -1,4 +1,4 @@
-name: Prelinger Colorized Vintage 24/7 Loop
+name: Prelinger 7 Videos 24/7 Loop
 
 on:
   workflow_dispatch:
@@ -9,45 +9,26 @@ jobs:
   vintage_stream:
     runs-on: ubuntu-latest
     timeout-minutes: 350
-
     steps:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download 7 Prelinger Colorized Videos
+      - name: Download ALL 7 Videos
         run: |
-          echo "Downloading 7 vintage videos..."
-          
-          # Video 1: Technico1949
-          wget -q -O video1.mp4 "https://dn790002.ca.archive.org/0/items/Technico1949/Technico1949.mp4"
-          
-          # Video 2: Market Street 1906 4K
-          wget -q -O video2.mp4 "https://dn790001.ca.archive.org/0/items/MarketStreet19064KScan20181016/MarketStreet_4K_to_2K_cropped_higher_contrast.mp4"
-          
-          # Video 3: Public Domain Movie Part 4
-          wget -q -O video3.mp4 "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
-          
-          # Video 4: r-JKfjKRsw0
-          wget -q -O video4.mp4 "https://dn710206.ca.archive.org/0/items/youtube-r-JKfjKRsw0/r-JKfjKRsw0.mp4"
-          
-          # Video 5: YM5A4TamTzo
-          wget -q -O video5.mp4 "https://dn721804.ca.archive.org/0/items/youtube-YM5A4TamTzo/YM5A4TamTzo.mp4"
-          
-          # Video 6: ePH--widhXk
-          wget -q -O video6.mp4 "https://dn721600.ca.archive.org/0/items/youtube-ePH--widhXk/ePH--widhXk.mp4"
-          
-          # Video 7: BuildYou1948
-          wget -q -O video7.mp4 "https://dn790000.ca.archive.org/0/items/BuildYou1948/BuildYou1948.mp4"
-          
-          # Video 8: MakeMine1948 (Bonus)
-          wget -q -O video8.mp4 "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4"
-          
-          echo "=== All Videos Ready ==="
+          echo "Downloading 7 Prelinger videos..."
+          wget --timeout=30 --tries=3 -q -O video1.mp4 "https://dn790002.ca.archive.org/0/items/Technico1949/Technico1949.mp4"
+          wget --timeout=30 --tries=3 -q -O video2.mp4 "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
+          wget --timeout=30 --tries=3 -q -O video3.mp4 "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4"
+          wget --timeout=30 --tries=3 -q -O video4.mp4 "https://dn790001.ca.archive.org/0/items/MarketStreet19064KScan20181016/MarketStreet_4K_to_2K_cropped_higher_contrast.mp4"
+          wget --timeout=30 --tries=3 -q -O video5.mp4 "https://dn710206.ca.archive.org/0/items/youtube-r-JKfjKRsw0/r-JKfjKRsw0.mp4"
+          wget --timeout=30 --tries=3 -q -O video6.mp4 "https://dn721804.ca.archive.org/0/items/youtube-YM5A4TamTzo/YM5A4TamTzo.mp4"
+          wget --timeout=30 --tries=3 -q -O video7.mp4 "https://dn721600.ca.archive.org/0/items/youtube-ePH--widhXk/ePH--widhXk.mp4"
+          echo "✅ All 7 videos ready!"
           ls -lh video*.mp4
 
-      - name: Create Infinite 8-Video Playlist
+      - name: Create 7-Video Playlist
         run: |
-          cat > playlist.txt << EOF
+          cat > playlist.txt << 'EOF'
 file 'video1.mp4'
 file 'video2.mp4'
 file 'video3.mp4'
@@ -55,38 +36,30 @@ file 'video4.mp4'
 file 'video5.mp4'
 file 'video6.mp4'
 file 'video7.mp4'
-file 'video8.mp4'
 EOF
-          echo "=== Playlist ==="
           cat playlist.txt
 
-      - name: Test Stream (5 seconds)
+      - name: Test (10 sec)
         run: |
           ffmpeg -y -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,
-                 drawtext=text='PRELINGER COLORIZED':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-                 drawtext=text='Vintage Archive Collection':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-                 drawtext=text='24/7 Live Stream':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-                 drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" \
-            -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 \
-            -c:a aac -b:a 128k -ar 44100 \
-            -t 5 -f null - && echo "✅ TEST PASSED" || echo "❌ TEST FAILED"
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,
+                 drawtext=text='PRELINGER 7K':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=30,
+                 drawtext=text='Colorized Vintage Loop':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=90,
+                 drawtext=text='24/7 Live':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650" \
+            -c:v libx264 -preset ultrafast -b:v 1500k -pix_fmt yuv420p \
+            -c:a aac -b:a 96k -t 10 -f null - && echo "✅ READY!"
 
-      - name: 🔴 24/7 YouTube Live Stream (Infinite Loop)
+      - name: 🔴 24/7 YouTube Stream
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "🚀 Starting 24/7 Prelinger Colorized Loop..."
-          ffmpeg -re \
-            -stream_loop -1 \
-            -f concat -safe 0 -i playlist.txt \
-            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,
-                 drawtext=text='PRELINGER COLORIZED':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-                 drawtext=text='Vintage Archive 1900s-1940s':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-                 drawtext=text='24/7 Non-Stop | Public Domain':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-                 drawtext=text='%{localtime\:%H\:%M\:%S} | Loop #%{n+1}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" \
-            -c:v libx264 -preset ultrafast -tune zerolatency \
-            -b:v 2000k -minrate 2000k -maxrate 2000k -bufsize 4000k \
-            -pix_fmt yuv420p -r 25 -g 50 \
-            -c:a aac -b:a 128k -ar 44100 \
+          ffmpeg -re -stream_loop -1 -f concat -safe 0 -i playlist.txt \
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,
+                 drawtext=text='PRELINGER 7K':fontsize=48:fontcolor=#FFD700:x=(w-text_w)/2:y=30,
+                 drawtext=text='Vintage Colorized':fontsize=32:fontcolor=white:x=(w-text_w)/2:y=90,
+                 drawtext=text='24/7 Non-Stop Loop':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650,
+                 drawtext=text='%{localtime\:%H:%M}':fontsize=24:fontcolor=#aaffaa:x=20:y=680" \
+            -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k \
+            -pix_fmt yuv420p -r 25 \
+            -c:a aac -b:a 96k \
             -f flv "$RTMP_TARGET"
