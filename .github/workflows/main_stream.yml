@@ -1,4 +1,4 @@
-name: YouTube 24/7 Vintage Stream (7 Videos - SIMPLE)
+name: YouTube 24/7 Vintage Stream (Skip Failed Downloads)
 
 on:
   workflow_dispatch:
@@ -13,41 +13,60 @@ jobs:
     steps:
       - name: Install FFmpeg
         run: |
-          sudo apt-get update && sudo apt-get install -y ffmpeg wget
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg wget
 
-      - name: Download 7 Vintage Videos
+      - name: Download videos (continue on error)
+        continue-on-error: true
         run: |
-          echo "Downloading 7 videos..."
+          echo "Downloading 7 videos (skipping failed)..."
 
-          # 7 فيديوهات مضمونة 100%
-          wget --timeout=30 --tries=3 -q -O v1.mp4 "https://archive.org/download/Technico1949/Technico1949_512kb.mp4"
-          wget --timeout=30 --tries=3 -q -O v2.mp4 "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
-          wget --timeout=30 --tries=3 -q -O v3.mp4 "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4"
-          wget --timeout=30 --tries=3 -q -O v4.mp4 "https://archive.org/download/1938TheTinNoseShop/1938TheTinNoseShop_512kb.mp4"
-          wget --timeout=30 --tries=3 -q -O v5.mp4 "https://archive.org/download/ThatTinNoseShop1938/ThatTinNoseShop1938_512kb.mp4"
-          wget --timeout=30 --tries=3 -q -O v6.mp4 "https://archive.org/download/1949publicdomainanimation/1949_512kb.mp4"
-          wget --timeout=30 --tries=3 -q -O v7.mp4 "https://archive.org/download/1940sShortFilm/1940sShortFilm_512kb.mp4"
+          # رابط 1 - مضمون
+          wget --timeout=30 --tries=3 -q -O v1.mp4 "https://archive.org/download/Technico1949/Technico1949.mp4" || echo "v1 failed, continue..."
 
-          echo "✅ Videos ready:"
-          ls -lh v*.mp4
+          # رابط 2 - مضمون  
+          wget --timeout=30 --tries=3 -q -O v2.mp4 "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4" || echo "v2 failed, continue..."
 
-      - name: 🔴 Stream 24/7 Loop (7 Videos)
+          # رابط 3
+          wget --timeout=30 --tries=3 -q -O v3.mp4 "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4" || echo "v3 failed, continue..."
+
+          # رابط 4
+          wget --timeout=30 --tries=3 -q -O v4.mp4 "https://archive.org/download/1938TheTinNoseShop/1938TheTinNoseShop_512kb.mp4" || echo "v4 failed, continue..."
+
+          # رابط 5
+          wget --timeout=30 --tries=3 -q -O v5.mp4 "https://archive.org/download/ThatTinNoseShop1938/ThatTinNoseShop1938_512kb.mp4" || echo "v5 failed, continue..."
+
+          # رابط 6
+          wget --timeout=30 --tries=3 -q -O v6.mp4 "https://archive.org/download/1949publicdomainanimation/1949_512kb.mp4" || echo "v6 failed, continue..."
+
+          # رابط 7
+          wget --timeout=30 --tries=3 -q -O v7.mp4 "https://archive.org/download/1940sShortFilm/1940sShortFilm_512kb.mp4" || echo "v7 failed, continue..."
+
+          echo "✅ All downloads attempted:"
+          ls -lh v*.mp4 2>/dev/null || echo "No files found"
+
+      - name: 🔴 Stream available videos
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
-          echo "🎬 Starting 24/7 loop..."
-          ffmpeg -re \
-            -i v1.mp4 -i v2.mp4 -i v3.mp4 -i v4.mp4 -i v5.mp4 -i v6.mp4 -i v7.mp4 \
-            -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v0]; \
-                             [1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v1]; \
-                             [2:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v2]; \
-                             [3:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v3]; \
-                             [4:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v4]; \
-                             [5:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v5]; \
-                             [6:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2[v6]; \
-                             [v0][0:a][v1][1:a][v2][2:a][v3][3:a][v4][4:a][v5][5:a][v6][6:a]concat=n=7:v=1:a=1[outv][outa]" \
-            -map "[outv]" -map "[outa]" \
-            -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -maxrate 1500k -bufsize 3000k \
-            -pix_fmt yuv420p -r 25 \
-            -c:a aac -b:a 96k \
-            -f flv "$RTMP_TARGET"
+          echo "🎬 Starting stream with available videos..."
+          # استخدم أي فيديوهات موجودة (حتى لو واحد بس)
+          if [ -f v1.mp4 ]; then
+            ffmpeg -re -stream_loop -1 -i v1.mp4 \
+              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
+              -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -maxrate 1500k -bufsize 3000k \
+              -pix_fmt yuv420p -r 25 -c:a aac -b:a 96k -f flv "$RTMP_TARGET"
+          elif [ -f v2.mp4 ]; then
+            ffmpeg -re -stream_loop -1 -i v2.mp4 \
+              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
+              -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -maxrate 1500k -bufsize 3000k \
+              -pix_fmt yuv420p -r 25 -c:a aac -b:a 96k -f flv "$RTMP_TARGET"
+          elif [ -f v3.mp4 ]; then
+            ffmpeg -re -stream_loop -1 -i v3.mp4 \
+              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
+              -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -maxrate 1500k -bufsize 3000k \
+              -pix_fmt yuv420p -r 25 -c:a aac -b:a 96k -f flv "$RTMP_TARGET"
+          else
+            echo "No videos available for streaming"
+            exit 1
+          fi
