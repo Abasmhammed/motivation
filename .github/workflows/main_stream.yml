@@ -1,4 +1,4 @@
-name: Vintage Jazz 24/7 - Video Background
+name: Prelinger Colorized Vintage 24/7 Loop
 
 on:
   workflow_dispatch:
@@ -6,7 +6,7 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  jazz_stream:
+  vintage_stream:
     runs-on: ubuntu-latest
     timeout-minutes: 350
 
@@ -14,61 +14,77 @@ jobs:
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg wget
 
-      - name: Download 4 Paul Whiteman Songs
+      - name: Download 7 Prelinger Colorized Videos
         run: |
-          wget -q -O tipperary.mp3 "https://dn720708.ca.archive.org/0/items/its-a-long-long-way-to-tipperary/It%27s%20a%20Long%2C%20Long%20Way%20to%20Tipperary.mp3"
-          wget -q -O dancing.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/ABoyAndAGirlWereDancing.mp3"
-          wget -q -O twilight.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AtTwilight.mp3"
-          wget -q -O happiness.mp3 "https://dn721501.ca.archive.org/0/items/PaulWhiteman1920-1935CompleteCollection/AllForYou-Happiness.mp3"
-          echo "=== Songs ==="
-          ls -lh *.mp3
+          echo "Downloading 7 vintage videos..."
+          
+          # Video 1: Technico1949
+          wget -q -O video1.mp4 "https://dn790002.ca.archive.org/0/items/Technico1949/Technico1949.mp4"
+          
+          # Video 2: Market Street 1906 4K
+          wget -q -O video2.mp4 "https://dn790001.ca.archive.org/0/items/MarketStreet19064KScan20181016/MarketStreet_4K_to_2K_cropped_higher_contrast.mp4"
+          
+          # Video 3: Public Domain Movie Part 4
+          wget -q -O video3.mp4 "https://ia801605.us.archive.org/27/items/PubicDomainTheMoviepart4Conclusion/04_pubicDomain_TheMovie_part4_512kb.mp4"
+          
+          # Video 4: r-JKfjKRsw0
+          wget -q -O video4.mp4 "https://dn710206.ca.archive.org/0/items/youtube-r-JKfjKRsw0/r-JKfjKRsw0.mp4"
+          
+          # Video 5: YM5A4TamTzo
+          wget -q -O video5.mp4 "https://dn721804.ca.archive.org/0/items/youtube-YM5A4TamTzo/YM5A4TamTzo.mp4"
+          
+          # Video 6: ePH--widhXk
+          wget -q -O video6.mp4 "https://dn721600.ca.archive.org/0/items/youtube-ePH--widhXk/ePH--widhXk.mp4"
+          
+          # Video 7: BuildYou1948
+          wget -q -O video7.mp4 "https://dn790000.ca.archive.org/0/items/BuildYou1948/BuildYou1948.mp4"
+          
+          # Video 8: MakeMine1948 (Bonus)
+          wget -q -O video8.mp4 "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4"
+          
+          echo "=== All Videos Ready ==="
+          ls -lh video*.mp4
 
-      - name: Download Background Video
+      - name: Create Infinite 8-Video Playlist
         run: |
-          wget -q -O jazz_bg.mp4 "https://dn790001.ca.archive.org/0/items/098439/098439.mp4"
-          echo "=== Background Video ==="
-          ls -lh jazz_bg.mp4
-          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1 jazz_bg.mp4
-
-      - name: Create Playlist
-        run: |
-          printf "file 'tipperary.mp3'\nfile 'dancing.mp3'\nfile 'twilight.mp3'\nfile 'happiness.mp3'\n" > playlist.txt
+          cat > playlist.txt << EOF
+file 'video1.mp4'
+file 'video2.mp4'
+file 'video3.mp4'
+file 'video4.mp4'
+file 'video5.mp4'
+file 'video6.mp4'
+file 'video7.mp4'
+file 'video8.mp4'
+EOF
+          echo "=== Playlist ==="
           cat playlist.txt
 
-      - name: Test FFmpeg (5 sec, no stream)
+      - name: Test Stream (5 seconds)
         run: |
-          ffmpeg -y \
-            -stream_loop -1 -i jazz_bg.mp4 \
-            -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -filter_complex "
-              [0:v]scale=1280:720,setsar=1,
-              drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
-              drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='24/7 Live Jazz Radio':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=620:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
-              [v]" \
-            -map "[v]" -map "1:a" \
-            -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 -g 50 \
+          ffmpeg -y -stream_loop -1 -f concat -safe 0 -i playlist.txt \
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,
+                 drawtext=text='PRELINGER COLORIZED':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+                 drawtext=text='Vintage Archive Collection':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+                 drawtext=text='24/7 Live Stream':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+                 drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" \
+            -c:v libx264 -preset ultrafast -b:v 2000k -pix_fmt yuv420p -r 25 \
             -c:a aac -b:a 128k -ar 44100 \
             -t 5 -f null - && echo "✅ TEST PASSED" || echo "❌ TEST FAILED"
 
-      - name: 🔴 Stream to YouTube 24/7
+      - name: 🔴 24/7 YouTube Live Stream (Infinite Loop)
         env:
           RTMP_TARGET: "rtmp://a.rtmp.youtube.com/live2/${{ secrets.YOUTUBE_STREAM_KEY }}"
         run: |
+          echo "🚀 Starting 24/7 Prelinger Colorized Loop..."
           ffmpeg -re \
-            -stream_loop -1 -i jazz_bg.mp4 \
-            -stream_loop -1 -f concat -safe 0 -i playlist.txt \
-            -filter_complex "
-              [0:v]scale=1280:720,setsar=1,
-              drawbox=x=0:y=0:w=1280:h=720:c=black@0.45:t=fill,
-              drawtext=text='🎷 VINTAGE JAZZ 1920s':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
-              drawtext=text='Paul Whiteman Golden Era':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='24/7 Live Jazz Radio':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=620:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
-              drawtext=text='%{localtime\:%H\:%M\:%S}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
-              [v]" \
-            -map "[v]" -map "1:a" \
+            -stream_loop -1 \
+            -f concat -safe 0 -i playlist.txt \
+            -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1,
+                 drawtext=text='PRELINGER COLORIZED':fontsize=52:fontcolor=#FFD700:x=(w-text_w)/2:y=30:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf,
+                 drawtext=text='Vintage Archive 1900s-1940s':fontsize=36:fontcolor=white:x=(w-text_w)/2:y=100:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+                 drawtext=text='24/7 Non-Stop | Public Domain':fontsize=28:fontcolor=#00d4ff:x=(w-text_w)/2:y=650:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf,
+                 drawtext=text='%{localtime\:%H\:%M\:%S} | Loop #%{n+1}':fontsize=24:fontcolor=#aaffaa:x=20:y=680:fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf" \
             -c:v libx264 -preset ultrafast -tune zerolatency \
             -b:v 2000k -minrate 2000k -maxrate 2000k -bufsize 4000k \
             -pix_fmt yuv420p -r 25 -g 50 \
