@@ -1,4 +1,4 @@
-name: Vintage Book 24/7 Stream (English - International)
+name: Complete Audiobook 24/7 Stream (Full Chapters + Vintage)
 
 on:
   workflow_dispatch:
@@ -6,74 +6,94 @@ on:
     - cron: '0 */6 * * *'
 
 jobs:
-  international_stream:
+  complete_stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 400
+    timeout-minutes: 450
 
     steps:
-      - name: Install FFmpeg and Dependencies
+      - name: Install Required Tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg curl
+          sudo apt-get install -y ffmpeg curl unzip jq
 
-      - name: Download Content Files
+      - name: Extract Complete Audiobook Collection
         run: |
-          echo "Downloading high-quality vintage and audiobook content..."
+          echo "=== Extracting full audiobook collection + working videos ==="
 
-          # Primary audiobook (full book)
+          # Method 1: ZIP containing all chapters
+          echo "Downloading audiobook ZIP..."
           curl -L -A "Mozilla/5.0" -H "Referer: https://archive.org" \
-               -o book_full.m4b "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_1504_librivox_64kb.mp4"
+               -o audiobook_full.zip "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_128kb.mp3.zip" || true
 
-          # Preface chapter backup
+          if [ -f audiobook_full.zip ]; then
+            echo "Extracting chapters from ZIP..."
+            unzip -q audiobook_full.zip "*.mp3" -d audiobook_chapters/ || true
+            echo "Chapters extracted:"
+            ls -lh audiobook_chapters/*.mp3 2>/dev/null || echo "No chapters found"
+          fi
+
+          # Method 2: Direct M4B full book
           curl -L -A "Mozilla/5.0" -H "Referer: https://archive.org" \
-               -o book_preface.mp3 "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_00_bennett_128kb.mp3"
+               -o audiobook_complete.m4b "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_1504_librivox.m4b" || true
 
-          # Vintage video backups
-          curl -L -A "Mozilla/5.0" -o vintage1.mp4 "https://ia800706.us.archive.org/5/items/MakeMine1948/MakeMine1948.mp4" || true
-          curl -L -A "Mozilla/5.0" -o vintage2.mp4 "https://archive.org/download/Technico1949/Technico1949.mp4" || true
-          curl -L -A "Mozilla/5.0" -o vintage3.mp4 "https://dn710702.ca.archive.org/0/items/CapnCrunchCereal1960s-70s/1965%20Cap%27n%20Crunch%27s%20Sweet%20Tooth.mp4" || true
+          # Method 3: Priority preface (your confirmed link)
+          curl -L -A "Mozilla/5.0" -H "Referer: https://archive.org" \
+               -o priority_preface.mp3 "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_00_bennett_128kb.mp3"
 
-          echo "Content ready for streaming:"
-          ls -lh *.m4b *.mp3 *.mp4 2>/dev/null | grep -v " 0 "
+          # Confirmed working vintage videos
+          curl -L -A "Mozilla/5.0" -o vintage1.mp4 "https://ia800706.us.archive.org/5/items/MakeMine1948/MakeMine1948.mp4"
+          curl -L -A "Mozilla/5.0" -o vintage2.mp4 "https://archive.org/download/Technico1949/Technico1949.mp4"
+          curl -L -A "Mozilla/5.0" -o vintage3.mp4 "https://dn710702.ca.archive.org/0/items/CapnCrunchCereal1960s-70s/1965%20Cap%27n%20Crunch%27s%20Sweet%20Tooth.mp4"
 
-      - name: 24/7 Live Stream to YouTube
+          echo "=== ALL CONTENT READY ==="
+          find . -name "*.mp3" -o -name "*.m4b" -o -name "*.mp4" | xargs ls -lh | grep -v " 0 " || echo "No valid content"
+
+      - name: Intelligent 24/7 Stream Selection
         env:
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          # Content priority (longest duration first)
-          CONTENT_FILE=""
-          for file in book_full.m4b vintage1.mp4 vintage2.mp4 vintage3.mp4 book_preface.mp3; do
-            if [ -f "$file" ] && ffprobe "$file" >/dev/null 2>&1; then
-              CONTENT_FILE="$file"
-              break
+          # Priority: longest complete audiobook first, then chapters, then preface, then vintage
+          CANDIDATES="audiobook_complete.m4b audiobook_chapters/*.mp3 priority_preface.mp3 vintage1.mp4 vintage2.mp4 vintage3.mp4"
+          
+          SELECTED_FILE=""
+          MAX_DURATION=0
+          
+          for candidate in $CANDIDATES; do
+            [ ! -f "$candidate" ] && continue
+            
+            duration=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$candidate" 2>/dev/null || echo "0")
+            if (( $(echo "$duration > $MAX_DURATION" | bc -l) )); then
+              SELECTED_FILE="$candidate"
+              MAX_DURATION="$duration"
             fi
           done
 
-          if [ -z "$CONTENT_FILE" ]; then
-            echo "No valid content files available"
+          if [ -z "$SELECTED_FILE" ]; then
+            echo "ERROR: No valid media files found"
             exit 1
           fi
 
-          duration=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$CONTENT_FILE" 2>/dev/null || echo "unknown")
-          echo "Selected content: $CONTENT_FILE (duration: ${duration}s)"
+          echo "🎬 SELECTED: $(basename $SELECTED_FILE)"
+          echo "📏 Duration: ${MAX_DURATION}s ($(printf '%.1f\n' $(echo "$MAX_DURATION / 60" | bc -l)) minutes)"
+          echo "🔴 Starting 24/7 infinite loop stream..."
 
-          # Stream configuration
-          if [[ $CONTENT_FILE == *.mp3 ]]; then
-            # Audio to video conversion with black background
-            ffmpeg -stream_loop -1 -i "$CONTENT_FILE" \
-                   -f lavfi -i color=black:size=1280x720:rate=30 \
+          # Professional streaming pipeline
+          if [[ $SELECTED_FILE == *.mp3 ]]; then
+            # Audiobook to video conversion
+            ffmpeg -stream_loop -1 -i "$SELECTED_FILE" \
+                   -f lavfi -i color=#0a0f1c:size=1280x720:rate=30 \
                    -c:v libx264 -preset ultrafast -tune zerolatency \
-                   -b:v 2000k -maxrate 2500k -bufsize 4000k \
-                   -g 50 -keyint_min 25 -pix_fmt yuv420p \
-                   -c:a aac -b:a 128k -ar 44100 \
+                   -b:v 2500k -maxrate 3500k -bufsize 5000k \
+                   -g 60 -keyint_min 30 -sc_threshold 0 -pix_fmt yuv420p \
+                   -c:a aac -b:a 128k -ar 44100 -ac 2 \
                    -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
           else
             # Direct video streaming
-            ffmpeg -re -stream_loop -1 -i "$CONTENT_FILE" \
-                   -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:black" \
+            ffmpeg -re -stream_loop -1 -i "$SELECTED_FILE" \
+                   -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:#0a0f1c" \
                    -c:v libx264 -preset ultrafast -tune zerolatency \
-                   -b:v 2000k -maxrate 2500k -bufsize 4000k \
-                   -g 50 -keyint_min 25 -sc_threshold 0 -pix_fmt yuv420p \
-                   -c:a aac -b:a 128k -ar 44100 \
+                   -b:v 2500k -maxrate 3500k -bufsize 5000k \
+                   -g 60 -keyint_min 30 -sc_threshold 0 -pix_fmt yuv420p \
+                   -c:a aac -b:a 128k -ar 44100 -ac 2 \
                    -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
           fi
