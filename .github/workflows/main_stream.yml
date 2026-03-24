@@ -19,9 +19,9 @@ jobs:
       - name: Pro Download (Archive.org + Headers + Fallbacks)
         continue-on-error: true
         run: |
-          echo "=== Archive.org Pro Download (15 files) ==="
+          echo "=== Archive.org Pro Download (14 files) ==="
 
-          # Pro function with validation
+          # Pro function with validation - SKIPS failed links automatically
           download_pro() {
             local url="$1" output="$2"
             echo "Trying: $url -> $output"
@@ -36,13 +36,12 @@ jobs:
               return 0
             else
               rm -f "$output.tmp"
-              echo "❌ $output FAILED (too small)"
+              echo "❌ $output FAILED (too small) - SKIPPED"
               return 1
             fi
           }
 
-          # 15 PRO links (tested patterns + your working ones)
-          download_pro "https://archive.org/download/Technico1949/Technico1949.mp4" v1.mp4
+          # 14 PRO links (v1.mp4 REMOVED)
           download_pro "https://ia800706.us.archive.org/5/items/MakeMine1948/MakeMine1948.mp4" v2.mp4
           download_pro "https://archive.org/download/CapnCrunchCereal1960s-70s/CapnCrunchCereal1960s-70s.mp4" v3.mp4
           download_pro "https://dn710702.ca.archive.org/0/items/CapnCrunchCereal1960s-70s/1965%20Cap%27n%20Crunch%27s%20Sweet%20Tooth.mp4" v4.mp4
