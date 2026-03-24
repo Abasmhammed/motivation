@@ -1,81 +1,80 @@
-name: Non-Stop 24/7 Vintage Stream (Guaranteed Continuity)
+name: Beautiful Days Vintage 24/7 (Pro Fixed + Archive.org)
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/22 * * * *'
+    - cron: '0 */6 * * *'
 
 jobs:
-  continuous_stream:
+  vintage_stream:
     runs-on: ubuntu-latest
-    timeout-minutes: 19
+    timeout-minutes: 350
 
     steps:
-      - name: Install Streaming Dependencies
+      - name: Install FFmpeg & Tools
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg curl -qq
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg wget curl
 
-      - name: Download High-Quality Content
+      - name: Download 12 Videos/Audio (Skip Failed)
+        continue-on-error: true
         run: |
-          echo "Downloading verified working files..."
+          echo "Downloading 12 vintage/archive files..."
 
-          # Confirmed working files from previous successful runs
-          curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               -H "Referer: https://archive.org" -o v1.mp4 "https://ia800706.us.archive.org/5/items/MakeMine1948/MakeMine1948.mp4"
+          # Original working links
+          wget --timeout=30 --tries=3 -q -O v1.mp4 "https://archive.org/download/Technico1949/Technico1949.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v2.mp4 "https://dn790000.ca.archive.org/0/items/MakeMine1948/MakeMine1948.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v3.mp4 "https://archive.org/download/1938TheTinNoseShop/1938TheTinNoseShop_512kb.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v4.mp4 "https://archive.org/download/ThatTinNoseShop1938/ThatTinNoseShop1938_512kb.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v5.mp4 "https://archive.org/download/1949publicdomainanimation/1949_512kb.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v6.mp4 "https://archive.org/download/1940sShortFilm/1940sShortFilm_512kb.mp4" || true
 
-          curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               -o v2.mp4 "https://archive.org/download/Technico1949/Technico1949.mp4"
+          # New Archive.org additions (Cap'n Crunch + LibriVox)
+          wget --timeout=30 --tries=3 -q -O v7.mp4 "https://archive.org/download/CapnCrunchCereal1960s-70s/CapnCrunchCereal1960s-70s.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v8.mp4 "https://dn710702.ca.archive.org/0/items/CapnCrunchCereal1960s-70s/1965%20Cap%27n%20Crunch%27s%20Sweet%20Tooth.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v9.mp3 "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_00_bennett_128kb.mp3" || true
+          wget --timeout=30 --tries=3 -q -O v10.mp4 "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_1504_librivox_64kb.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v11.mp4 "https://ia800706.us.archive.org/5/items/MakeMine1948/MakeMine1948.mp4" || true
+          wget --timeout=30 --tries=3 -q -O v12.mp4 "https://archive.org/download/@vintagecartoons/1940sCartoonShort.mp4" || true
 
-          curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               -o v3.mp4 "https://dn710702.ca.archive.org/0/items/CapnCrunchCereal1960s-70s/1965%20Cap%27n%20Crunch%27s%20Sweet%20Tooth.mp4"
+          echo "Available files:"
+          ls -lh v*.mp* 2>/dev/null || echo "No files downloaded"
 
-          curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" \
-               -o audio.mp3 "https://archive.org/download/howtoliveon24hoursaday_1504_librivox/howtoliveon24hoursaday_00_bennett_128kb.mp3"
-
-          echo "Content verified:"
-          ls -lh v*.mp4 audio.mp3 2>/dev/null || echo "Download check"
-
-      - name: Professional 24/7 Live Stream
+      - name: 24/7 Live Stream (Video + Audio Support)
         env:
           STREAM_KEY: ${{ secrets.YOUTUBE_STREAM_KEY }}
         run: |
-          # Content selection (priority order)
-          CONTENT_FILE=""
-          for file in v1.mp4 v2.mp4 v3.mp4 audio.mp3; do
-            if [ -f "$file" ] && ffprobe "$file" >/dev/null 2>&1; then
-              CONTENT_FILE="$file"
+          # Find first valid file (video priority, then audio)
+          FILE=""
+          for f in v*.mp4 v*.mp3; do
+            if [ -f "$f" ] && ffprobe "$f" >/dev/null 2>&1; then
+              FILE="$f"
               break
             fi
           done
-
-          if [ -z "$CONTENT_FILE" ]; then
-            echo "ERROR: No valid content files"
+          
+          if [ -z "$FILE" ]; then
+            echo "No valid files found!"
             exit 1
           fi
 
-          duration=$(ffprobe -v quiet -show_entries format=duration -of csv=p=0 "$CONTENT_FILE" 2>/dev/null || echo "unknown")
-          echo "🎬 Streaming: $(basename $CONTENT_FILE)"
-          echo "📏 Duration: ${duration}s"
-          echo "🔴 Starting continuous broadcast..."
+          echo "Streaming: $FILE (size: $(du -h $FILE | cut -f1))"
 
-          # Optimized streaming pipeline for maximum reliability
-          if [[ $CONTENT_FILE == *.mp3 ]]; then
-            # Audio to video with professional black background
-            ffmpeg -stream_loop -1 -i "$CONTENT_FILE" \
-                   -f lavfi -i color=#0f1419:size=1280x720:rate=30 \
-                   -c:v libx264 -preset superfast -tune zerolatency -threads 2 \
-                   -b:v 1800k -maxrate 2200k -bufsize 3500k \
-                   -g 48 -keyint_min 24 -sc_threshold 0 \
-                   -pix_fmt yuv420p -c:a aac -b:a 112k -ar 44100 -ac 2 \
-                   -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+          if [[ $FILE == *.mp3 ]]; then
+            # Convert audio to video loop (black background)
+            ffmpeg -stream_loop -1 -i "$FILE" -f lavfi -i color=black:size=1280x720:duration=1 -shortest \
+              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
+              -c:v libx264 -preset ultrafast -tune zerolatency -b:v 1500k -maxrate 2000k -bufsize 3000k \
+              -g 50 -keyint_min 25 -sc_threshold 0 -pix_fmt yuv420p \
+              -c:a aac -b:a 128k -ar 44100 -ac 2 \
+              -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
           else
-            # Direct HD video streaming
-            ffmpeg -re -stream_loop -1 -i "$CONTENT_FILE" \
-                   -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2:#0f1419" \
-                   -c:v libx264 -preset superfast -tune zerolatency -threads 2 \
-                   -b:v 1800k -maxrate 2200k -bufsize 3500k \
-                   -g 48 -keyint_min 24 -sc_threshold 0 \
-                   -pix_fmt yuv420p -c:a aac -b:a 112k -ar 44100 -ac 2 \
-                   -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
+            # Video streaming
+            ffmpeg -re -stream_loop -1 -i "$FILE" \
+              -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2" \
+              -c:v libx264 -preset ultrafast -tune zerolatency \
+              -b:v 1500k -maxrate 2000k -bufsize 3000k \
+              -g 50 -keyint_min 25 -sc_threshold 0 -pix_fmt yuv420p \
+              -c:a aac -b:a 128k -ar 44100 -ac 2 \
+              -f flv "rtmp://a.rtmp.youtube.com/live2/$STREAM_KEY"
           fi
